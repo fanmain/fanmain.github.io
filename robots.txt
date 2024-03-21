@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://fanmain.github.io/sitemap.xml

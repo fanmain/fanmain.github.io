@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Categories on fan&#39;s blog</title>
+        <link>https://example.com/categories/</link>
+        <description>Recent content in Categories on fan&#39;s blog</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>Example Person</copyright>
+        <lastBuildDate>Mon, 09 Mar 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://example.com/categories/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>iOS</title>
+        <link>https://example.com/categories/ios/</link>
+        <pubDate>Mon, 09 Mar 2020 00:00:00 +0000</pubDate>
+        
+        <guid>https://example.com/categories/ios/</guid>
+        <description>&lt;img src="https://example.com/categories/ios/hutomo-abrianto-l2jk-uxb1BY-unsplash.jpg" alt="Featured image of post iOS" /&gt;</description>
+        </item>
+        <item>
+        <title>音视频</title>
+        <link>https://example.com/categories/media/</link>
+        <pubDate>Mon, 09 Mar 2020 00:00:00 +0000</pubDate>
+        
+        <guid>https://example.com/categories/media/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>算法</title>
+        <link>https://example.com/categories/algorithm/</link>
+        <pubDate>Fri, 08 Mar 2019 00:00:00 +0000</pubDate>
+        
+        <guid>https://example.com/categories/algorithm/</guid>
+        <description></description>
+        </item>
+        
+    </channel>
+</rss>

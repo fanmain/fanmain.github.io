@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="原文地址 blog.csdn.net 编解码协议 H264（视频）和 AAC（音频）有软编解码和硬编解码。 网络传输都是用的大端序（高地址低字节），H264 网络传输的 startcode 是数据的 length，不是 0x00000001。NALU 有两种格式：Annex B 和 AVCC。Annex B 格式 startcode 以 0x 00 00 01 或 0x 00 00 00 01 开头， AVCC 格式以 NALU 的长度开头。 AAC 也有两种传输格式：ADTS 和 ADIF ADIF：Audio Data Interchange Format 音频数据交换格式。这种格式的特征是可以确定的找到这个音频数据的开始，不需进行在音频数据流中间开始的解码，即它的解码必须在明确定义的开始处进行。故这种格式常用在磁盘文件中。 ADTS：Audio Data Transport Stream 音频数据传输流。这种格式的特征是它是一个有同步字的比特流，解码可以在这个流中任何位置开始。它的特征类似于 mp3 数据流格式。 软编码：使用 CPU 进行编码。编码框架 ffmpeg+x264。 https://www.jianshu.com/p/e631b041e96d https://www.jianshu.com/p/3de01105d735 硬编码：不使用 CPU 进行编码，使用显卡（GPU）进行硬件加速。 专用的 DSP、FPGA、ASIC 芯片等硬件进行编码。ios 上硬编码框架 Video ToolBox 和 AudioToolbox。 Intel 硬编码使用 Intel 处理器内部集成的显卡进行硬件加速，qsv 加速方法便对应着 Intel 硬编码。Intel 硬编码对 H.">
+<title>iOS 音视频编解码</title>
+
+<link rel='canonical' href='https://example.com/p/ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/'>
+
+<link rel="stylesheet" href="/scss/style.min.d8118f156935b64eca93aca758476adca858d2c47354971654d9bd2933a0e45f.css"><meta property='og:title' content="iOS 音视频编解码">
+<meta property='og:description' content="原文地址 blog.csdn.net 编解码协议 H264（视频）和 AAC（音频）有软编解码和硬编解码。 网络传输都是用的大端序（高地址低字节），H264 网络传输的 startcode 是数据的 length，不是 0x00000001。NALU 有两种格式：Annex B 和 AVCC。Annex B 格式 startcode 以 0x 00 00 01 或 0x 00 00 00 01 开头， AVCC 格式以 NALU 的长度开头。 AAC 也有两种传输格式：ADTS 和 ADIF ADIF：Audio Data Interchange Format 音频数据交换格式。这种格式的特征是可以确定的找到这个音频数据的开始，不需进行在音频数据流中间开始的解码，即它的解码必须在明确定义的开始处进行。故这种格式常用在磁盘文件中。 ADTS：Audio Data Transport Stream 音频数据传输流。这种格式的特征是它是一个有同步字的比特流，解码可以在这个流中任何位置开始。它的特征类似于 mp3 数据流格式。 软编码：使用 CPU 进行编码。编码框架 ffmpeg+x264。 https://www.jianshu.com/p/e631b041e96d https://www.jianshu.com/p/3de01105d735 硬编码：不使用 CPU 进行编码，使用显卡（GPU）进行硬件加速。 专用的 DSP、FPGA、ASIC 芯片等硬件进行编码。ios 上硬编码框架 Video ToolBox 和 AudioToolbox。 Intel 硬编码使用 Intel 处理器内部集成的显卡进行硬件加速，qsv 加速方法便对应着 Intel 硬编码。Intel 硬编码对 H.">
+<meta property='og:url' content='https://example.com/p/ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/'>
+<meta property='og:site_name' content='fan&#39;s blog'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='iOS' /><meta property='article:published_time' content='2020-03-09T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2020-03-09T00:00:00&#43;00:00'/>
+<meta name="twitter:title" content="iOS 音视频编解码">
+<meta name="twitter:description" content="原文地址 blog.csdn.net 编解码协议 H264（视频）和 AAC（音频）有软编解码和硬编解码。 网络传输都是用的大端序（高地址低字节），H264 网络传输的 startcode 是数据的 length，不是 0x00000001。NALU 有两种格式：Annex B 和 AVCC。Annex B 格式 startcode 以 0x 00 00 01 或 0x 00 00 00 01 开头， AVCC 格式以 NALU 的长度开头。 AAC 也有两种传输格式：ADTS 和 ADIF ADIF：Audio Data Interchange Format 音频数据交换格式。这种格式的特征是可以确定的找到这个音频数据的开始，不需进行在音频数据流中间开始的解码，即它的解码必须在明确定义的开始处进行。故这种格式常用在磁盘文件中。 ADTS：Audio Data Transport Stream 音频数据传输流。这种格式的特征是它是一个有同步字的比特流，解码可以在这个流中任何位置开始。它的特征类似于 mp3 数据流格式。 软编码：使用 CPU 进行编码。编码框架 ffmpeg+x264。 https://www.jianshu.com/p/e631b041e96d https://www.jianshu.com/p/3de01105d735 硬编码：不使用 CPU 进行编码，使用显卡（GPU）进行硬件加速。 专用的 DSP、FPGA、ASIC 芯片等硬件进行编码。ios 上硬编码框架 Video ToolBox 和 AudioToolbox。 Intel 硬编码使用 Intel 处理器内部集成的显卡进行硬件加速，qsv 加速方法便对应着 Intel 硬编码。Intel 硬编码对 H.">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu64c9db1682e262e7a870ad943e47fe9d_10415_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍥</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">fan&#39;s blog</a></h1>
+            <h2 class="site-description">不积跬步，无以至千里</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/CaiJimmy/hugo-theme-stack'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/ios/" style="background-color: #2a9d8f; color: #fff;">
+                iOS
+            </a>
+        
+            <a href="/categories/media/" style="background-color: #2a9d8f; color: #fff;">
+                音视频
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/">iOS 音视频编解码</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Mar 09, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 17 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <p>原文地址 <a class="link" href="https://blog.csdn.net/sinat_27741463/article/details/102463158"  target="_blank" rel="noopener"
+    >blog.csdn.net</a></p>
+<p>编解码协议 H264（视频）和 AAC（音频）有软编解码和硬编解码。</p>
+<p>网络传输都是用的大端序（高地址低字节），H264 网络传输的 startcode 是数据的 length，不是 0x00000001。NALU 有两种格式：Annex B 和 AVCC。Annex B 格式 startcode 以 0x 00 00 01 或 0x 00 00 00 01 开头， AVCC 格式以 NALU 的长度开头。</p>
+<p><strong>AAC 也有两种传输格式：ADTS 和 ADIF</strong></p>
+<ul>
+<li>ADIF：Audio Data Interchange Format 音频数据交换格式。这种格式的特征是可以确定的找到这个音频数据的开始，不需进行在音频数据流中间开始的解码，即它的解码必须在明确定义的开始处进行。故这种格式常用在磁盘文件中。</li>
+<li>ADTS：Audio Data Transport Stream 音频数据传输流。这种格式的特征是它是一个有同步字的比特流，解码可以在这个流中任何位置开始。它的特征类似于 mp3 数据流格式。</li>
+</ul>
+<p><strong>软编码：使用 CPU 进行编码。编码框架 ffmpeg+x264。</strong></p>
+<ul>
+<li><a class="link" href="https://www.jianshu.com/p/e631b041e96d"  target="_blank" rel="noopener"
+    >https://www.jianshu.com/p/e631b041e96d</a></li>
+<li><a class="link" href="https://www.jianshu.com/p/3de01105d735"  target="_blank" rel="noopener"
+    >https://www.jianshu.com/p/3de01105d735</a></li>
+</ul>
+<p><strong>硬编码：不使用 CPU 进行编码，使用显卡（GPU）进行硬件加速。</strong> 专用的 DSP、FPGA、ASIC 芯片等硬件进行编码。ios 上硬编码框架 Video ToolBox 和 AudioToolbox。</p>
+<ul>
+<li>Intel 硬编码使用 Intel 处理器内部集成的显卡进行硬件加速，qsv 加速方法便对应着 Intel 硬编码。Intel 硬编码对 H.264 加速效果明显，且不需要安装额外库（仅使用相应的 ffmpeg 命令）。</li>
+<li>NVIDIA 硬编码使用英伟达的显卡对视频编码进行加速。CUDA 加速方法对应着 NVIDIA 硬编码。使用英伟达硬编码之前需要安装 CUDA 与英伟达的必要驱动。安装好两个环境后就可以使用 NVIDIA 的硬编码了。英伟达关于视频的编解码提供了两个相关的 SDK：NVENC（硬编码）和 NVCUVID（硬解码），前者负责硬件编码，二后者负责硬件解码。CUDA 支持 Windows、Linux、MacOS 三种主流操作系统。https://blog.csdn.net/qq_29350001/article/details/75144665（CUDA 详解）</li>
+<li>FFmpeg 中也支持了硬编码，集成了显示视频处理模块。在命令行中使用 ffmpeg -hwaccels 可以查看 ffmpeg 支持的硬件加速方法。<br>
+FFMPEG 目前存在一个编码器 nvenc 是对于 NVIDIA 的 NVENC 的封装，通过使用它可以和 FFMPEG 无缝的整合起来。不过 FFMPEG 只存在 NVENC 的接口，不存在 NVCUVID（解码器） 的封装。如果需要实现相关的解码器可能需要自己实现 FFMPEG 接口。FFMPEG 实现了对于 Intel QSV 的封装。</li>
+<li>DXVA 是微软定制的视频加速规范、在 Linux 平台上则是由 NVIDIA 提供的 VDPAU 和 Intel 提供的 VAAPI 加速规范。</li>
+</ul>
+<p>在不同平台上可通过不同 API 使用 Intel GPU 的硬件加速能力。目前主要由两套 API：VAAPI 以及 libmfx。VAAPI (视频加速 API，Video Acceleration API) 包含一套开源的库 (LibVA) 以及 API 规范, 用于硬件加速下的视频编解码以及处理，只有 Linux 上的驱动提供支持。libmfx。Intel Media SDK 中的 API 规范，支持视频编解码以及媒体处理。支持 Windows 以及 Linux。除了 Intel 自己的 API，在 Windows 系统上还有其他 API 可使用 Intel GPU 的硬件加速能力，这些 API 属于 Windows 标准，由 Intel 显卡驱动实现。DXVA2 / D3D11VA。标准 Windows API，支持通过 Intel 显卡驱动进行视频编解码，FFmpeg 有对应实现。Media Foundation。标准 Windows API，支持通过 Intel 显卡驱动进行视频编解码，FFmpeg 不支持该 API。https://blog.jianchihu.net/intel-gpu-hw-video-codec-develop.html</p>
+<p><strong>目前的主流 GPU 加速平台：</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">INTEL、AMD、NVIDIA
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>目前主流的 GPU 平台开发框架：</strong></p>
+<ul>
+<li>CUDA：NVIDIA 的封闭编程框架，通过框架可以调用 GPU 计算资源</li>
+<li>AMD APP：AMD 为自己的 GPU 提出的一套通用并行编程框架，标准开放，通过在 CPU、GPU 同时支持 OpenCL 框架，进行计算力融合。</li>
+<li>OpenCL：开放计算语言，为异构平台编写程序的该框架，异构平台可包含 CPU、GPU 以及其他计算处理器，目标是使相同的运算能支持不同平台硬件加速。</li>
+<li>Inel QuickSync：集成于 Intel 显卡中的专用视频编解码模块。</li>
+</ul>
+<p><a class="link" href="https://www.jianshu.com/p/8423724dffc1"  target="_blank" rel="noopener"
+    >https://www.jianshu.com/p/8423724dffc1</a><br>
+<a class="link" href="https://blog.csdn.net/haowei0926/article/details/56012139"  target="_blank" rel="noopener"
+    >https://blog.csdn.net/haowei0926/article/details/56012139</a></p>
+<p><a class="link" href="https://developer.apple.com/documentation/videotoolbox"  target="_blank" rel="noopener"
+    >ios 中的硬编码文档</a><br>
+ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个底层框架，可以直接访问硬件编码器和解码器。 它提供视频压缩和解压缩服务，并在 CoreVideo 像素缓冲区中存储的光栅 raster 图像格式之间进行转换。 这些服务以会话对象（压缩，解压缩和像素传输）的形式提供，它们以 Core Foundation（CF）类型呈现。 不需要直接访问硬件编码器和解码器的应用程序 App 就不需要直接使用 VideoToolbox。iOS 8.0 及以上苹果开放了 VideoToolbox 框架来实现 H264 硬编码（H264 是一种编解码协议，有多种编解码器能编解码 H264，这里是利用硬件进行编解码，FFmpeg 中可以利用硬编解码和软编解码）。</p>
+<ul>
+<li>CVPixelBufferRef/CVImageBufferRef：存放编码前和解码后的图像数据（未压缩的数据），这两个是相同的对象。</li>
+<li>CMTime：时间戳相关，时间以 64-bit/32-bit 的形式出现</li>
+<li>CMBlockBufferRef：编码后输出的数据（压缩后的数据）</li>
+<li>CMFormatDescriptionRef/CMVideoFormatDescriptionRef：图像存储方式，编解码器等格式描述。这两个是相同的对象。</li>
+<li>CMSampleBufferRef：存放编解码前后的视频图像的容器数据，iOS 中表示一帧音频 / 视频数据</li>
+<li>CMSampleBuffer 可能是一个压缩的数据，也可能是一个未压缩的数据。取决于 CMSampleBuffer 里面是 CMBlockBuffer（压缩后） 还是 CVPixelBuffer（未压缩）。</li>
+</ul>
+<p><strong>硬编码的步骤</strong> ：从相机或读取视频文件输出的 CVPixelBuffer（也是以 CMSampleBufferRef 封装形式存在）—&gt;Encoder—&gt;CMSampleBufferRef（编码后得到的数据封装）—&gt; 重新组装 NALUs。</p>
+<ol>
+<li>
+<p>通过 VTCompressionSessionCreate 创建编码器</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">VTCompressionSessionCreate(
+</span></span><span class="line"><span class="cl">	    CM_NULLABLE CFAllocatorRef                          allocator,
+</span></span><span class="line"><span class="cl">	    int32_t                                             width,
+</span></span><span class="line"><span class="cl">	    int32_t                                             height,
+</span></span><span class="line"><span class="cl">	    CMVideoCodecType                                    codecType,
+</span></span><span class="line"><span class="cl">	    CM_NULLABLE CFDictionaryRef                         encoderSpecification,
+</span></span><span class="line"><span class="cl">	    CM_NULLABLE CFDictionaryRef                         sourceImageBufferAttributes,
+</span></span><span class="line"><span class="cl">	    CM_NULLABLE CFAllocatorRef                          compressedDataAllocator,
+</span></span><span class="line"><span class="cl">	    CM_NULLABLE VTCompressionOutputCallback             outputCallback,
+</span></span><span class="line"><span class="cl">	    void * CM_NULLABLE                                  outputCallbackRefCon,
+</span></span><span class="line"><span class="cl">	    CM_RETURNS_RETAINED_PARAMETER CM_NULLABLE VTCompressionSessionRef * CM_NONNULL compressionSessionOut)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	allocator：内存分配器，填NULL为默认分配器
+</span></span><span class="line"><span class="cl">	width、height：视频帧像素的宽高，如果编码器不支持这个宽高的话可能会改变
+</span></span><span class="line"><span class="cl">	codecType：编码类型，枚举
+</span></span><span class="line"><span class="cl">	encoderSpecification：指定特定的编码器，填NULL的话由VideoToolBox自动选择
+</span></span><span class="line"><span class="cl">	sourceImageBufferAttributes：源像素缓冲区的属性，如果这个参数有值的话，VideoToolBox会创建一个缓冲池，不需要缓冲池可以设置为NULL
+</span></span><span class="line"><span class="cl">	compressedDataAllocator：压缩后数据的内存分配器，填NULL使用默认分配器
+</span></span><span class="line"><span class="cl">	outputCallback：视频编码后输出数据回调函数
+</span></span><span class="line"><span class="cl">	outputCallbackRefCon：回调函数中的自定义指针，我们通常传self，因为我们需要在C函数中调用self的方法，而C函数无法直接调self,
+</span></span><span class="line"><span class="cl">	compressionSessionOut：编码器句柄，传入编码器的指针
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>通过 VTSessionSetProperty 设置编码器属性，是否实时编码输出、是否产生 B 帧、设置关键帧、设置期望帧率、设置码率、最大码率值等等。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">VTSessionSetProperty(
+</span></span><span class="line"><span class="cl">  // 解码会话
+</span></span><span class="line"><span class="cl">  CM_NONNULL VTSessionRef       session,
+</span></span><span class="line"><span class="cl">  // 属性 KEY
+</span></span><span class="line"><span class="cl">  CM_NONNULL CFStringRef        propertyKey,
+</span></span><span class="line"><span class="cl">  // 设置的属性值
+</span></span><span class="line"><span class="cl">  CM_NULLABLE CFTypeRef         propertyValue )
+</span></span><span class="line"><span class="cl">kVTCompressionPropertyKey_AverageBitRate：设置编码的平均码率，单位是bps，这不是一个硬性指标，设置的码率会上下浮动。VideoToolBox框架只支持ABR模式。H264有4种码率控制方法：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">CBR（Constant Bit Rate）是以恒定比特率方式进行编码，有Motion发生时，由于码率恒定，只能通过增大QP来减少码字大小，图像质量变差，当场景静止时，图像质量又变好，因此图像质量不稳定。这种算法优先考虑码率(带宽)。
+</span></span><span class="line"><span class="cl">VBR（Variable Bit Rate）动态比特率，其码率可以随着图像的复杂程度的不同而变化，因此其编码效率比较高，Motion发生时，马赛克很少。码率控制算法根据图像内容确定使用的比特率，图像内容比较简单则分配较少的码率(似乎码字更合适)，图像内容复杂则分配较多的码字，这样既保证了质量，又兼顾带宽限制。这种算法优先考虑图像质量。
+</span></span><span class="line"><span class="cl">*CVBR（Constrained VariableBit Rate）,这样翻译成中文就比较难听了，它是VBR的一种改进方法。但是Constrained又体现在什么地方呢？这种算法对应的Maximum bitRate恒定或者Average BitRate恒定。这种方法的兼顾了以上两种方法的优点：在图像内容静止时，节省带宽，有Motion发生时，利用前期节省的带宽来尽可能的提高图像质量，达到同时兼顾带宽和图像质量的目的。
+</span></span><span class="line"><span class="cl">ABR (Average Bit Rate) 在一定的时间范围内达到设定的码率，但是局部码率峰值可以超过设定的码率，平均码率恒定。可以作为VBR和CBR的一种折中选择。
+</span></span><span class="line"><span class="cl">kVTCompressionPropertyKey_ProfileLevel：设置H264编码的画质，H264有4种Profile：BP、EP、MP、HP
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">BP(Baseline Profile)：基本画质。支持I/P 帧，只支持无交错（Progressive）和CAVLC；主要应用：可视电话，会议电视，和无线通讯等实时视频通讯领域
+</span></span><span class="line"><span class="cl">EP(Extended profile)：进阶画质。支持I/P/B/SP/SI 帧，只支持无交错（Progressive）和CAVLC；
+</span></span><span class="line"><span class="cl">MP(Main profile)：主流画质。提供I/P/B 帧，支持无交错（Progressive）和交错（Interlaced），也支持CAVLC 和CABAC 的支持；主要应用：数字广播电视和数字视频存储
+</span></span><span class="line"><span class="cl">HP(High profile)：高级画质。在main Profile 的基础上增加了8×8内部预测、自定义量化、 无损视频编码和更多的YUV 格式；应用于广电和存储领域
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Level就多了，这里不一一列举，可参考h264 profile &amp; level，iPhone上常用的方案如下：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">实时直播：
+</span></span><span class="line"><span class="cl">低清Baseline Level 1.3
+</span></span><span class="line"><span class="cl">标清Baseline Level 3
+</span></span><span class="line"><span class="cl">半高清Baseline Level 3.1
+</span></span><span class="line"><span class="cl">全高清Baseline Level 4.1
+</span></span><span class="line"><span class="cl">存储媒体：
+</span></span><span class="line"><span class="cl">低清 Main Level 1.3
+</span></span><span class="line"><span class="cl">标清 Main Level 3
+</span></span><span class="line"><span class="cl">半高清 Main Level 3.1
+</span></span><span class="line"><span class="cl">全高清 Main Level 4.1
+</span></span><span class="line"><span class="cl">高清存储：
+</span></span><span class="line"><span class="cl">半高清 High Level 3.1
+</span></span><span class="line"><span class="cl">全高清 High Level 4.1
+</span></span><span class="line"><span class="cl">kVTCompressionPropertyKey_RealTime：设置是否实时编码输出
+</span></span><span class="line"><span class="cl">kVTCompressionPropertyKey_AllowFrameReordering：配置是否产生B帧，High profile 支持 B 帧
+</span></span><span class="line"><span class="cl">kVTCompressionPropertyKey_MaxKeyFrameInterval、kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration：配置I帧间隔
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>调用 VTCompressionSessionPrepareToEncodeFrames 准备编码</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">VTCompressionSessionPrepareToEncodeFrames( CM_NONNULL VTCompressionSessionRef session )
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">session：编码器句柄，传入编码器的指针
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>输入采集到的视频数据 CVImageBufferRef /CVPixelBufferRef，调用 VTCompressionSessionEncodeFrame 进行编码</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">VTCompressionSessionEncodeFrame(
+</span></span><span class="line"><span class="cl">    CM_NONNULL VTCompressionSessionRef  session,
+</span></span><span class="line"><span class="cl">    CM_NONNULL CVImageBufferRef         imageBuffer,
+</span></span><span class="line"><span class="cl">    CMTime                              presentationTimeStamp,
+</span></span><span class="line"><span class="cl">    CMTime                              duration, // may be kCMTimeInvalid
+</span></span><span class="line"><span class="cl">    CM_NULLABLE CFDictionaryRef         frameProperties,
+</span></span><span class="line"><span class="cl">    void * CM_NULLABLE                  sourceFrameRefCon,
+</span></span><span class="line"><span class="cl">    VTEncodeInfoFlags * CM_NULLABLE     infoFlagsOut )
+</span></span><span class="line"><span class="cl">session：创建编码器时的句柄
+</span></span><span class="line"><span class="cl">imageBuffer：YUV数据，iOS通过摄像头采集出来的视频流数据类型是CMSampleBufferRef，我们要从里面拿到CVImageBufferRef来进行编码。通过CMSampleBufferGetImageBuffer方法可以从sampleBuffer中获得imageBuffer。
+</span></span><span class="line"><span class="cl">presentationTimeStamp：这一帧的时间戳，单位是毫秒
+</span></span><span class="line"><span class="cl">duration：这一帧的持续时间，如果没有持续时间，填kCMTimeInvalid
+</span></span><span class="line"><span class="cl">frameProperties：指定这一帧的属性，这里我们可以用来指定产生I帧
+</span></span><span class="line"><span class="cl">encodeParams：自定义指针
+</span></span><span class="line"><span class="cl">infoFlagsOut：用于接收编码操作的信息，不需要就置为NULL
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>获取到编码后的数据并进行处理并组装 NALU，添加起始码 &ldquo;\x00\x00\x00\x01&rdquo;，如果这一帧是个关键帧，需要添加 sps pps** 等。将硬编码成功的 CMSampleBuffer 转换成 H264 码流，解析出参数集 SPS &amp; PPS，加上开始码组装成 NALU。提取出视频数据，将长度码转换为开始码，组成 NALU，将 NALU 写入到文件中。NALU 只要有两种格式：Annex B 和 AVCC。Annex B 格式以 0x 00 00 01 或 0x 00 00 00 01 开头， AVCC 格式以所在 NALU 的长度开头。<br>
+编码后的数据通过步骤一 VTCompressionSessionCreate 方法中参数的回调函数 encodeOutputDataCallback 返回。编码后的数据以及这一帧的基本信息都在 CMSampleBufferRef 中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">void encodeOutputDataCallback(void * CM_NULLABLE outputCallbackRefCon, void * CM_NULLABLE sourceFrameRefCon, OSStatus status, VTEncodeInfoFlags infoFlags, CM_NULLABLE CMSampleBufferRef sampleBuffer){ }。
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>调用 VTCompressionSessionCompleteFrames 停止编码器</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">VT_EXPORT OSStatus
+</span></span><span class="line"><span class="cl">VTCompressionSessionCompleteFrames(
+</span></span><span class="line"><span class="cl">	CM_NONNULL VTCompressionSessionRef	session,//编码器句柄
+</span></span><span class="line"><span class="cl">	CMTime								completeUntilPresentationTimeStamp//kCMTimeInvalid等
+</span></span><span class="line"><span class="cl">)
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>调用 VTCompressionSessionInvalidate 销毁编码器</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">VTCompressionSessionInvalidate(编码器句柄compressionSessionRef);
+</span></span><span class="line"><span class="cl">CFRelease(编码器句柄compressionSessionRef);
+</span></span><span class="line"><span class="cl">_compressionSessionRef = NULL;
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ol>
+<p><em>代码示范：</em></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span><span class="lnt">146
+</span><span class="lnt">147
+</span><span class="lnt">148
+</span><span class="lnt">149
+</span><span class="lnt">150
+</span><span class="lnt">151
+</span><span class="lnt">152
+</span><span class="lnt">153
+</span><span class="lnt">154
+</span><span class="lnt">155
+</span><span class="lnt">156
+</span><span class="lnt">157
+</span><span class="lnt">158
+</span><span class="lnt">159
+</span><span class="lnt">160
+</span><span class="lnt">161
+</span><span class="lnt">162
+</span><span class="lnt">163
+</span><span class="lnt">164
+</span><span class="lnt">165
+</span><span class="lnt">166
+</span><span class="lnt">167
+</span><span class="lnt">168
+</span><span class="lnt">169
+</span><span class="lnt">170
+</span><span class="lnt">171
+</span><span class="lnt">172
+</span><span class="lnt">173
+</span><span class="lnt">174
+</span><span class="lnt">175
+</span><span class="lnt">176
+</span><span class="lnt">177
+</span><span class="lnt">178
+</span><span class="lnt">179
+</span><span class="lnt">180
+</span><span class="lnt">181
+</span><span class="lnt">182
+</span><span class="lnt">183
+</span><span class="lnt">184
+</span><span class="lnt">185
+</span><span class="lnt">186
+</span><span class="lnt">187
+</span><span class="lnt">188
+</span><span class="lnt">189
+</span><span class="lnt">190
+</span><span class="lnt">191
+</span><span class="lnt">192
+</span><span class="lnt">193
+</span><span class="lnt">194
+</span><span class="lnt">195
+</span><span class="lnt">196
+</span><span class="lnt">197
+</span><span class="lnt">198
+</span><span class="lnt">199
+</span><span class="lnt">200
+</span><span class="lnt">201
+</span><span class="lnt">202
+</span><span class="lnt">203
+</span><span class="lnt">204
+</span><span class="lnt">205
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="c1">#import &lt;VideoToolbox/VideoToolbox.h&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">interface</span> <span class="n">Nextvc</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSInteger</span> <span class="n">frameID</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">VTCompressionSessionRef</span> <span class="n">cEncodeingSession</span><span class="p">;</span><span class="o">//</span><span class="err">编码器上下文</span>
+</span></span><span class="line"><span class="cl">     <span class="n">dispatch_queue_t</span> <span class="n">cEncodeQueue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="n">videoToolbox硬编码</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span><span class="p">(</span><span class="n">void</span><span class="p">)</span><span class="n">videoToolboxHardEncode</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">           <span class="n">frameID</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">           <span class="ne">int</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">480</span><span class="p">,</span><span class="n">height</span> <span class="o">=</span> <span class="mi">640</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">创建编码</span><span class="n">session</span>
+</span></span><span class="line"><span class="cl">           <span class="n">OSStatus</span> <span class="n">status</span> <span class="o">=</span> <span class="n">VTCompressionSessionCreate</span><span class="p">(</span><span class="n">NULL</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">kCMVideoCodecType_H264</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="n">didCompressH264</span><span class="p">,</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">void</span> <span class="o">*</span><span class="p">)(</span><span class="bp">self</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">cEncodeingSession</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;H264:VTCompressionSessionCreate:</span><span class="si">%d</span><span class="s2">&#34;</span><span class="p">,(</span><span class="ne">int</span><span class="p">)</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">               <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;H264:Unable to create a H264 session&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">               <span class="k">return</span> <span class="p">;</span>
+</span></span><span class="line"><span class="cl">           <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">/**</span>
+</span></span><span class="line"><span class="cl">            <span class="err">设置编码器属性</span>
+</span></span><span class="line"><span class="cl">         <span class="o">*/</span>
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">设置实时编码输出（避免延迟）</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_RealTime</span><span class="p">,</span> <span class="n">kCFBooleanTrue</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_ProfileLevel</span><span class="p">,</span><span class="n">kVTProfileLevel_H264_Baseline_AutoLevel</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">是否产生</span><span class="n">B帧</span><span class="p">(</span><span class="err">因为</span><span class="n">B帧在解码时并不是必要的</span><span class="p">,</span><span class="err">是可以抛弃</span><span class="n">B帧的</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_AllowFrameReordering</span><span class="p">,</span> <span class="n">kCFBooleanFalse</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">设置关键帧（</span><span class="n">GOPsize</span><span class="err">）间隔，</span><span class="n">GOP太小的话图像会模糊</span>
+</span></span><span class="line"><span class="cl">           <span class="ne">int</span> <span class="n">frameInterval</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">           <span class="n">CFNumberRef</span> <span class="n">frameIntervalRaf</span> <span class="o">=</span> <span class="n">CFNumberCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="n">kCFNumberIntType</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">frameInterval</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_MaxKeyFrameInterval</span><span class="p">,</span> <span class="n">frameIntervalRaf</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">设置期望帧率，不是实际帧率</span>
+</span></span><span class="line"><span class="cl">           <span class="ne">int</span> <span class="n">fps</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">           <span class="n">CFNumberRef</span> <span class="n">fpsRef</span> <span class="o">=</span> <span class="n">CFNumberCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="n">kCFNumberIntType</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">fps</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_ExpectedFrameRate</span><span class="p">,</span> <span class="n">fpsRef</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">码率的理解：码率大了话就会非常清晰，但同时文件也会比较大。码率小的话，图像有时会模糊，但也勉强能看</span>
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">码率计算公式，参考印象笔记</span>
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">设置码率、上限、单位是</span><span class="n">bps</span>
+</span></span><span class="line"><span class="cl">           <span class="ne">int</span> <span class="n">bitRate</span> <span class="o">=</span> <span class="n">width</span> <span class="o">*</span> <span class="n">height</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">           <span class="n">CFNumberRef</span> <span class="n">bitRateRef</span> <span class="o">=</span> <span class="n">CFNumberCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="n">kCFNumberSInt32Type</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bitRate</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_AverageBitRate</span><span class="p">,</span> <span class="n">bitRateRef</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">设置码率，均值，单位是</span><span class="n">byte</span>
+</span></span><span class="line"><span class="cl">           <span class="ne">int</span> <span class="n">bigRateLimit</span> <span class="o">=</span> <span class="n">width</span> <span class="o">*</span> <span class="n">height</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">           <span class="n">CFNumberRef</span> <span class="n">bitRateLimitRef</span> <span class="o">=</span> <span class="n">CFNumberCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="n">kCFNumberSInt32Type</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bigRateLimit</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">kVTCompressionPropertyKey_DataRateLimits</span><span class="p">,</span> <span class="n">bitRateLimitRef</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">           <span class="o">//</span><span class="err">准备编码</span>
+</span></span><span class="line"><span class="cl">           <span class="n">VTCompressionSessionPrepareToEncodeFrames</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">/**</span>
+</span></span><span class="line"><span class="cl"> <span class="err">输入待编码数据</span><span class="n">CMSampleBufferRef</span><span class="err">，开始编码</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="n">param</span> <span class="n">sampleBuffer</span> <span class="err">待编码数据，可以是从摄像头获取的数据，也可以是从视频文件中获取的数据</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="n">param</span> <span class="n">forceKeyFrame</span> <span class="err">是否强制</span><span class="n">I帧</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="k">return</span> <span class="err">结果</span>
+</span></span><span class="line"><span class="cl"> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span> <span class="p">(</span><span class="n">BOOL</span><span class="p">)</span><span class="n">videoEncodeInputData</span><span class="p">:(</span><span class="n">CMSampleBufferRef</span><span class="p">)</span><span class="n">sampleBuffer</span> <span class="n">forceKeyFrame</span><span class="p">:(</span><span class="n">BOOL</span><span class="p">)</span><span class="n">forceKeyFrame</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">NULL</span> <span class="o">==</span> <span class="n">cEncodeingSession</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">NO</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">nil</span> <span class="o">==</span> <span class="n">sampleBuffer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">NO</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CMTime</span> <span class="n">presentationTimeStamp</span> <span class="o">=</span> <span class="n">CMTimeMake</span><span class="p">(</span><span class="n">frameID</span><span class="o">++</span><span class="p">,</span> <span class="mi">1000</span><span class="p">);</span> <span class="o">//</span> <span class="n">CMTimeMake</span><span class="p">(</span><span class="err">分子，分母</span><span class="p">)</span><span class="err">；分子</span><span class="o">/</span><span class="err">分母</span> <span class="o">=</span> <span class="err">时间</span><span class="p">(</span><span class="err">秒</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="n">CVImageBufferRef</span> <span class="n">pixelBuffer</span> <span class="o">=</span> <span class="p">(</span><span class="n">CVImageBufferRef</span><span class="p">)</span><span class="n">CMSampleBufferGetImageBuffer</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSDictionary</span> <span class="o">*</span><span class="n">frameProperties</span> <span class="o">=</span> <span class="err">@</span><span class="p">{(</span><span class="n">__bridge</span> <span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="n">kVTEncodeFrameOptionKey_ForceKeyFrame</span><span class="p">:</span> <span class="err">@</span><span class="p">(</span><span class="n">forceKeyFrame</span><span class="p">)};</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">OSStatus</span> <span class="n">status</span> <span class="o">=</span> <span class="n">VTCompressionSessionEncodeFrame</span><span class="p">(</span><span class="n">cEncodeingSession</span><span class="p">,</span> <span class="n">pixelBuffer</span><span class="p">,</span> <span class="n">kCMTimeInvalid</span><span class="p">,</span> <span class="n">kCMTimeInvalid</span><span class="p">,</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">CFDictionaryRef</span><span class="p">)</span><span class="n">frameProperties</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="n">NULL</span><span class="p">);</span><span class="o">//</span><span class="err">第三个参数可以换成</span><span class="n">presentationTimeStamp</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">noErr</span> <span class="o">!=</span> <span class="n">status</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;VEVideoEncoder::VTCompressionSessionEncodeFrame failed! status:</span><span class="si">%d</span><span class="s2">&#34;</span><span class="p">,</span> <span class="p">(</span><span class="ne">int</span><span class="p">)</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">NO</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">YES</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="n">VideoToolBox硬编码回调</span>
+</span></span><span class="line"><span class="cl"><span class="n">void</span> <span class="n">didCompressH264</span><span class="p">(</span><span class="n">void</span> <span class="o">*</span><span class="n">outputCallbackRefCon</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">sourceFrameRefCon</span><span class="p">,</span> <span class="n">OSStatus</span> <span class="n">status</span><span class="p">,</span> <span class="n">VTEncodeInfoFlags</span> <span class="n">infoFlags</span><span class="p">,</span> <span class="n">CMSampleBufferRef</span> <span class="n">sampleBuffer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">noErr</span> <span class="o">!=</span> <span class="n">status</span> <span class="o">||</span> <span class="n">nil</span> <span class="o">==</span> <span class="n">sampleBuffer</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;VEVideoEncoder::encodeOutputCallback Error : </span><span class="si">%d</span><span class="s2">!&#34;</span><span class="p">,</span> <span class="p">(</span><span class="ne">int</span><span class="p">)</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">nil</span> <span class="o">==</span> <span class="n">outputCallbackRefCon</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">CMSampleBufferDataIsReady</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">infoFlags</span> <span class="o">&amp;</span> <span class="n">kVTEncodeInfo_FrameDropped</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;VEVideoEncoder::H264 encode dropped frame.&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">Nextvc</span> <span class="o">*</span><span class="n">encoder</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">Nextvc</span> <span class="o">*</span><span class="p">)</span><span class="n">outputCallbackRefCon</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">char</span> <span class="n">header</span><span class="p">[]</span> <span class="o">=</span> <span class="s2">&#34;</span><span class="se">\x00\x00\x00\x01</span><span class="s2">&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">headerLen</span> <span class="o">=</span> <span class="p">(</span><span class="n">sizeof</span> <span class="n">header</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">//</span> <span class="err">最后一位是</span>\<span class="mi">0</span><span class="err">结束符，要减掉</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSData</span> <span class="o">*</span><span class="n">headerData</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSData</span> <span class="n">dataWithBytes</span><span class="p">:</span><span class="n">header</span> <span class="n">length</span><span class="p">:</span><span class="n">headerLen</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="o">//</span> <span class="err">判断是否是关键帧</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="ne">bool</span> <span class="n">isKeyFrame</span> <span class="o">=</span> <span class="o">!</span><span class="n">CFDictionaryContainsKey</span><span class="p">((</span><span class="n">CFDictionaryRef</span><span class="p">)</span><span class="n">CFArrayGetValueAtIndex</span><span class="p">(</span><span class="n">CMSampleBufferGetSampleAttachmentsArray</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">,</span> <span class="bp">true</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="k">const</span> <span class="n">void</span> <span class="o">*</span><span class="p">)</span><span class="n">kCMSampleAttachmentKey_NotSync</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">判断当前帧是否为关键帧</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CFArrayRef</span> <span class="n">array</span> <span class="o">=</span> <span class="n">CMSampleBufferGetSampleAttachmentsArray</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">,</span> <span class="bp">true</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CFDictionaryRef</span> <span class="n">dic</span> <span class="o">=</span> <span class="n">CFArrayGetValueAtIndex</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="ne">bool</span> <span class="n">isKeyFrame</span> <span class="o">=</span> <span class="o">!</span><span class="n">CFDictionaryContainsKey</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span> <span class="n">kCMSampleAttachmentKey_NotSync</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">isKeyFrame</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;VEVideoEncoder::编码了一个关键帧&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">//</span><span class="err">图像的存储方式，编解码器等格式描述</span>
+</span></span><span class="line"><span class="cl">        <span class="n">CMFormatDescriptionRef</span> <span class="n">formatDescriptionRef</span> <span class="o">=</span> <span class="n">CMSampleBufferGetFormatDescription</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="o">/*</span><span class="err">关键帧需要加上</span><span class="n">SPS</span><span class="err">、</span><span class="n">PPS信息</span>
+</span></span><span class="line"><span class="cl">        <span class="err">获取</span><span class="n">sps</span> <span class="o">&amp;</span> <span class="n">pps</span> <span class="err">数据</span> <span class="err">只获取</span><span class="mi">1</span><span class="err">次，保存在</span><span class="n">h264文件开头的第一帧中</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sps</span><span class="p">(</span><span class="n">sample</span> <span class="n">per</span> <span class="n">second</span> <span class="err">采样次数</span><span class="o">/</span><span class="n">s</span><span class="p">),</span><span class="err">是衡量模数转换（</span><span class="n">ADC</span><span class="err">）时采样速率的单位</span>
+</span></span><span class="line"><span class="cl">         <span class="n">CMVideoFormatDescriptionGetH264ParameterSetAtIndex获取sps和pps信息</span><span class="err">，并转换为二进制写入文件或者进行上传</span>
+</span></span><span class="line"><span class="cl">         <span class="o">*/</span>
+</span></span><span class="line"><span class="cl">        <span class="n">size_t</span> <span class="n">sParameterSetSize</span><span class="p">;</span><span class="o">//</span><span class="err">参数集合占的字节大小</span>
+</span></span><span class="line"><span class="cl">        <span class="n">size_t</span> <span class="n">sParameterSetCount</span><span class="p">;</span><span class="o">//</span><span class="err">参数集合元素个数</span>
+</span></span><span class="line"><span class="cl">        <span class="k">const</span> <span class="n">uint8_t</span> <span class="o">*</span><span class="n">sParameterSet</span><span class="p">;</span><span class="o">//</span><span class="err">参数集合</span>
+</span></span><span class="line"><span class="cl">        <span class="n">OSStatus</span> <span class="n">spsStatus</span> <span class="o">=</span> <span class="n">CMVideoFormatDescriptionGetH264ParameterSetAtIndex</span><span class="p">(</span><span class="n">formatDescriptionRef</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sParameterSet</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sParameterSetSize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sParameterSetCount</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span><span class="o">//</span><span class="n">index为0的位置是sps</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="n">size_t</span> <span class="n">pParameterSetSize</span><span class="p">,</span> <span class="n">pParameterSetCount</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">const</span> <span class="n">uint8_t</span> <span class="o">*</span><span class="n">pParameterSet</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">OSStatus</span> <span class="n">ppsStatus</span> <span class="o">=</span> <span class="n">CMVideoFormatDescriptionGetH264ParameterSetAtIndex</span><span class="p">(</span><span class="n">formatDescriptionRef</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pParameterSet</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pParameterSetSize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pParameterSetCount</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span><span class="o">//</span><span class="n">index为1的位置是pps</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">noErr</span> <span class="o">==</span> <span class="n">spsStatus</span> <span class="o">&amp;&amp;</span> <span class="n">noErr</span> <span class="o">==</span> <span class="n">ppsStatus</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="o">//</span><span class="err">把</span><span class="n">sps和pps参数集合转换成二进制数据</span><span class="err">，组装成</span><span class="n">sps帧和pps帧</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSData</span> <span class="o">*</span><span class="n">sps</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSData</span> <span class="n">dataWithBytes</span><span class="p">:</span><span class="n">sParameterSet</span> <span class="n">length</span><span class="p">:</span><span class="n">sParameterSetSize</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSData</span> <span class="o">*</span><span class="n">pps</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSData</span> <span class="n">dataWithBytes</span><span class="p">:</span><span class="n">pParameterSet</span> <span class="n">length</span><span class="p">:</span><span class="n">pParameterSetSize</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSMutableData</span> <span class="o">*</span><span class="n">spsData</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSMutableData</span> <span class="n">data</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="n">spsData</span> <span class="n">appendData</span><span class="p">:</span><span class="n">headerData</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="n">spsData</span> <span class="n">appendData</span><span class="p">:</span><span class="n">sps</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">            <span class="n">NSMutableData</span> <span class="o">*</span><span class="n">ppsData</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSMutableData</span> <span class="n">data</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="n">ppsData</span> <span class="n">appendData</span><span class="p">:</span><span class="n">headerData</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="p">[</span><span class="n">ppsData</span> <span class="n">appendData</span><span class="p">:</span><span class="n">pps</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">           
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">获取编码后的</span><span class="n">h264流数据</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CMBlockBufferRef</span> <span class="n">blockBuffer</span> <span class="o">=</span> <span class="n">CMSampleBufferGetDataBuffer</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">length</span><span class="p">;</span><span class="o">//</span><span class="err">单个</span><span class="n">NALU长度</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">totalLength</span><span class="p">;</span><span class="o">//</span><span class="err">所有</span><span class="n">NALU总长度</span>
+</span></span><span class="line"><span class="cl">    <span class="n">char</span> <span class="o">*</span><span class="n">dataPointer</span><span class="p">;</span><span class="o">//</span><span class="err">指针偏移</span>
+</span></span><span class="line"><span class="cl">   <span class="o">//</span> <span class="err">通过</span> <span class="err">首地址</span><span class="n">blockBuffer</span> <span class="err">、单个长度</span><span class="n">length</span><span class="err">、</span> <span class="err">总长度</span><span class="n">totalLength通过dataPointer指针偏移做遍历</span>
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="n">CMBlockBufferGetDataPointer</span><span class="p">(</span><span class="n">blockBuffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">length</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">totalLength</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dataPointer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">noErr</span> <span class="o">!=</span> <span class="n">status</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;VEVideoEncoder::CMBlockBufferGetDataPointer Error : </span><span class="si">%d</span><span class="s2">!&#34;</span><span class="p">,</span> <span class="p">(</span><span class="ne">int</span><span class="p">)</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">bufferOffset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span><span class="o">//</span><span class="n">Nalu的开始位置</span><span class="err">，每次增加加一个</span><span class="n">stratcode</span><span class="o">+</span><span class="n">nalu的长度</span>
+</span></span><span class="line"><span class="cl">    <span class="k">static</span> <span class="k">const</span> <span class="ne">int</span> <span class="n">avcHeaderLength</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span><span class="o">//</span><span class="err">返回的</span><span class="n">nalu数据前4个字节不是0x00000001的startcode</span><span class="p">,</span><span class="err">而是大端模式的帧长度</span><span class="n">length</span><span class="p">,</span><span class="err">读取数据时有个大小端模式：网络传输一般都是大端模式</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="n">bufferOffset</span> <span class="o">&lt;</span> <span class="n">totalLength</span> <span class="o">-</span> <span class="n">avcHeaderLength</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="o">//</span> <span class="err">读取</span>  <span class="err">一单元长度的</span><span class="n">nalu数据</span>
+</span></span><span class="line"><span class="cl">        <span class="n">uint32_t</span> <span class="n">nalUnitLength</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">memcpy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nalUnitLength</span><span class="p">,</span> <span class="n">dataPointer</span> <span class="o">+</span> <span class="n">bufferOffset</span><span class="p">,</span> <span class="n">avcHeaderLength</span><span class="p">);</span><span class="o">//</span><span class="err">目标地址，源地址，字节数，（从源地址拷贝</span><span class="n">n个字节到目标地址</span><span class="err">），这里其实是设置每个</span><span class="n">nalUnitLength的值</span><span class="err">，即各个</span><span class="n">Nalu的长度</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="o">//</span> <span class="err">大端转小端</span><span class="p">(</span><span class="err">系统端是小端序</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">nalUnitLength</span> <span class="o">=</span> <span class="n">CFSwapInt32BigToHost</span><span class="p">(</span><span class="n">nalUnitLength</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">//</span><span class="err">获取</span><span class="n">nalu数据</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSData</span> <span class="o">*</span><span class="n">frameData</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSData</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">initWithBytes</span><span class="p">:(</span><span class="n">dataPointer</span> <span class="o">+</span> <span class="n">bufferOffset</span> <span class="o">+</span> <span class="n">avcHeaderLength</span><span class="p">)</span> <span class="n">length</span><span class="p">:</span><span class="n">nalUnitLength</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="o">//</span><span class="n">Nalu头</span><span class="o">+</span><span class="n">NALU数据</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSMutableData</span> <span class="o">*</span><span class="n">outputFrameData</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSMutableData</span> <span class="n">data</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="n">outputFrameData</span> <span class="n">appendData</span><span class="p">:</span><span class="n">headerData</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="p">[</span><span class="n">outputFrameData</span> <span class="n">appendData</span><span class="p">:</span><span class="n">frameData</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">        <span class="o">//</span><span class="err">可以把</span><span class="n">outputFrameData写入文件</span><span class="err">，然后就得到了</span><span class="n">H264编码的文件</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="o">//</span><span class="err">读取下一个</span><span class="n">nalu</span> <span class="err">一次回调可能包含多个</span><span class="n">nalu数据</span><span class="err">，</span>
+</span></span><span class="line"><span class="cl">        <span class="n">bufferOffset</span> <span class="o">+=</span> <span class="n">avcHeaderLength</span> <span class="o">+</span> <span class="n">nalUnitLength</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>audioToolBox 硬编码</strong></p>
+<p><em>编码步骤：</em></p>
+<ol>
+<li>配置编码参数、获取编码器描述 description、获取编码器</li>
+<li>设置缓冲列表 AudioBufferList</li>
+<li>开始编码，将数据写入编码器 AudioConverterFillComplexBuffer，</li>
+<li>在回调函数中，将数据写入缓冲区</li>
+<li>编码完成后，获取缓冲区列表数据 outAudioBUfferList，添加 ADTS 头</li>
+<li>将数据写入文件</li>
+</ol>
+<p><em>代码示例：</em></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span><span class="lnt">146
+</span><span class="lnt">147
+</span><span class="lnt">148
+</span><span class="lnt">149
+</span><span class="lnt">150
+</span><span class="lnt">151
+</span><span class="lnt">152
+</span><span class="lnt">153
+</span><span class="lnt">154
+</span><span class="lnt">155
+</span><span class="lnt">156
+</span><span class="lnt">157
+</span><span class="lnt">158
+</span><span class="lnt">159
+</span><span class="lnt">160
+</span><span class="lnt">161
+</span><span class="lnt">162
+</span><span class="lnt">163
+</span><span class="lnt">164
+</span><span class="lnt">165
+</span><span class="lnt">166
+</span><span class="lnt">167
+</span><span class="lnt">168
+</span><span class="lnt">169
+</span><span class="lnt">170
+</span><span class="lnt">171
+</span><span class="lnt">172
+</span><span class="lnt">173
+</span><span class="lnt">174
+</span><span class="lnt">175
+</span><span class="lnt">176
+</span><span class="lnt">177
+</span><span class="lnt">178
+</span><span class="lnt">179
+</span><span class="lnt">180
+</span><span class="lnt">181
+</span><span class="lnt">182
+</span><span class="lnt">183
+</span><span class="lnt">184
+</span><span class="lnt">185
+</span><span class="lnt">186
+</span><span class="lnt">187
+</span><span class="lnt">188
+</span><span class="lnt">189
+</span><span class="lnt">190
+</span><span class="lnt">191
+</span><span class="lnt">192
+</span><span class="lnt">193
+</span><span class="lnt">194
+</span><span class="lnt">195
+</span><span class="lnt">196
+</span><span class="lnt">197
+</span><span class="lnt">198
+</span><span class="lnt">199
+</span><span class="lnt">200
+</span><span class="lnt">201
+</span><span class="lnt">202
+</span><span class="lnt">203
+</span><span class="lnt">204
+</span><span class="lnt">205
+</span><span class="lnt">206
+</span><span class="lnt">207
+</span><span class="lnt">208
+</span><span class="lnt">209
+</span><span class="lnt">210
+</span><span class="lnt">211
+</span><span class="lnt">212
+</span><span class="lnt">213
+</span><span class="lnt">214
+</span><span class="lnt">215
+</span><span class="lnt">216
+</span><span class="lnt">217
+</span><span class="lnt">218
+</span><span class="lnt">219
+</span><span class="lnt">220
+</span><span class="lnt">221
+</span><span class="lnt">222
+</span><span class="lnt">223
+</span><span class="lnt">224
+</span><span class="lnt">225
+</span><span class="lnt">226
+</span><span class="lnt">227
+</span><span class="lnt">228
+</span><span class="lnt">229
+</span><span class="lnt">230
+</span><span class="lnt">231
+</span><span class="lnt">232
+</span><span class="lnt">233
+</span><span class="lnt">234
+</span><span class="lnt">235
+</span><span class="lnt">236
+</span><span class="lnt">237
+</span><span class="lnt">238
+</span><span class="lnt">239
+</span><span class="lnt">240
+</span><span class="lnt">241
+</span><span class="lnt">242
+</span><span class="lnt">243
+</span><span class="lnt">244
+</span><span class="lnt">245
+</span><span class="lnt">246
+</span><span class="lnt">247
+</span><span class="lnt">248
+</span><span class="lnt">249
+</span><span class="lnt">250
+</span><span class="lnt">251
+</span><span class="lnt">252
+</span><span class="lnt">253
+</span><span class="lnt">254
+</span><span class="lnt">255
+</span><span class="lnt">256
+</span><span class="lnt">257
+</span><span class="lnt">258
+</span><span class="lnt">259
+</span><span class="lnt">260
+</span><span class="lnt">261
+</span><span class="lnt">262
+</span><span class="lnt">263
+</span><span class="lnt">264
+</span><span class="lnt">265
+</span><span class="lnt">266
+</span><span class="lnt">267
+</span><span class="lnt">268
+</span><span class="lnt">269
+</span><span class="lnt">270
+</span><span class="lnt">271
+</span><span class="lnt">272
+</span><span class="lnt">273
+</span><span class="lnt">274
+</span><span class="lnt">275
+</span><span class="lnt">276
+</span><span class="lnt">277
+</span><span class="lnt">278
+</span><span class="lnt">279
+</span><span class="lnt">280
+</span><span class="lnt">281
+</span><span class="lnt">282
+</span><span class="lnt">283
+</span><span class="lnt">284
+</span><span class="lnt">285
+</span><span class="lnt">286
+</span><span class="lnt">287
+</span><span class="lnt">288
+</span><span class="lnt">289
+</span><span class="lnt">290
+</span><span class="lnt">291
+</span><span class="lnt">292
+</span><span class="lnt">293
+</span><span class="lnt">294
+</span><span class="lnt">295
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">{  AudioConverterRef _audioConverter;//音频编码上下文
+</span></span><span class="line"><span class="cl">    size_t _pcmBufferSize;
+</span></span><span class="line"><span class="cl">    char *_pcmBuffer;
+</span></span><span class="line"><span class="cl">    size_t  _aacBufferSize;
+</span></span><span class="line"><span class="cl">    char *_aacBuffer;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">@property(nonatomic,strong)NSFileHandle *audioFileHandle;
+</span></span><span class="line"><span class="cl">@property(nonatomic,strong)dispatch_queue_t encoderQueue;)
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">//创建存储音频的文件，先移除以前的文件，再重新创建
+</span></span><span class="line"><span class="cl">- (NSFileHandle *)audioFileHandle {
+</span></span><span class="line"><span class="cl">    if (!_audioFileHandle) {
+</span></span><span class="line"><span class="cl">        NSString *documentPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+</span></span><span class="line"><span class="cl">        NSString * filePath = [documentPath stringByAppendingPathComponent:@&#34;demo01.aac&#34;];
+</span></span><span class="line"><span class="cl">        [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
+</span></span><span class="line"><span class="cl">        BOOL createFile = [[NSFileManager defaultManager] createFileAtPath:filePath contents:nil attributes:nil];
+</span></span><span class="line"><span class="cl">        NSAssert(createFile, @&#34;create audio path error&#34;);
+</span></span><span class="line"><span class="cl">        _audioFileHandle = [NSFileHandle fileHandleForWritingAtPath:filePath];
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    return _audioFileHandle;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">- (id)init {
+</span></span><span class="line"><span class="cl">    if (self = [super init]) {
+</span></span><span class="line"><span class="cl">        _encoderQueue = dispatch_queue_create(&#34;aac encode queue&#34;, DISPATCH_QUEUE_SERIAL);
+</span></span><span class="line"><span class="cl">        _audioConverter = NULL;
+</span></span><span class="line"><span class="cl">        _pcmBufferSize = 0;
+</span></span><span class="line"><span class="cl">        _pcmBuffer = NULL;
+</span></span><span class="line"><span class="cl">        _aacBufferSize = 1024;
+</span></span><span class="line"><span class="cl">        _aacBuffer = malloc(_aacBufferSize * sizeof(uint8_t));
+</span></span><span class="line"><span class="cl">        memset(_aacBuffer, 0, _aacBufferSize);
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    return self;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">//停止编码
+</span></span><span class="line"><span class="cl">- (void)stopEncodeAudio {
+</span></span><span class="line"><span class="cl">    [self.audioFileHandle closeFile];
+</span></span><span class="line"><span class="cl">    self.audioFileHandle = NULL;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">// 配置编码参数
+</span></span><span class="line"><span class="cl">- (void)setupEncoderFromSampleBuffer:(CMSampleBufferRef)sampleBuffer {
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    NSLog(@&#34;开始配置编码参数。。。。&#34;);
+</span></span><span class="line"><span class="cl">    /*
+</span></span><span class="line"><span class="cl">     AudioStreamBasicDescription是输入输出流的结构体描述，
+</span></span><span class="line"><span class="cl">     */
+</span></span><span class="line"><span class="cl">    // 获取原音频声音格式设置
+</span></span><span class="line"><span class="cl">    AudioStreamBasicDescription inAudioStreamBasicDescription = *CMAudioFormatDescriptionGetStreamBasicDescription((CMAudioFormatDescriptionRef)CMSampleBufferGetFormatDescription(sampleBuffer));
+</span></span><span class="line"><span class="cl">    AudioStreamBasicDescription outAudioStreamBasicDescription = {0};
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">   /*
+</span></span><span class="line"><span class="cl">    设置输出格式参数
+</span></span><span class="line"><span class="cl">    */
+</span></span><span class="line"><span class="cl">    // 采样率，音频流，在正常播放情况下的帧率。如果是压缩的格式，这个属性表示解压缩后的帧率。帧率不能为0。
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mSampleRate = inAudioStreamBasicDescription.mSampleRate;
+</span></span><span class="line"><span class="cl">    // 格式  kAudioFormatMPEG4AAC  = &#39;aac&#39; ,
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mFormatID = kAudioFormatMPEG4AAC;
+</span></span><span class="line"><span class="cl">    // 标签格式 无损编码 ， 无损编码 ，0表示没有
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mFormatFlags = kMPEG4Object_AAC_LC;
+</span></span><span class="line"><span class="cl">    // 每一个packet的音频数据大小。如果的动态大小，设置为0。动态大小的格式，需要用AudioStreamPacketDescription 来确定每个packet的大小。
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mBytesPerPacket = 0;
+</span></span><span class="line"><span class="cl">    //  每个packet的帧数。如果是未压缩的音频数据，值是1。动态帧率格式，这个值是一个较大的固定数字，比如说AAC的1024。如果是动态大小帧数（比如Ogg格式）设置为0。
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mFramesPerPacket = 1024;
+</span></span><span class="line"><span class="cl">    // 每帧的大小。每一帧的起始点到下一帧的起始点。如果是压缩格式，设置为0 。
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mBytesPerFrame = 0;
+</span></span><span class="line"><span class="cl">    // 声道数：1 单声道 2 立体声
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mChannelsPerFrame = 1;
+</span></span><span class="line"><span class="cl">    // 每采样点占用位数
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mBitsPerChannel = 0;
+</span></span><span class="line"><span class="cl">    // 保留参数（对齐当时）8字节对齐，填0.
+</span></span><span class="line"><span class="cl">    outAudioStreamBasicDescription.mReserved = 0;
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    // 获取编码器描述
+</span></span><span class="line"><span class="cl">    AudioClassDescription * description = [self getAudioClassDescriptionWithType:kAudioFormatMPEG4AAC fromManufacturer:kAppleSoftwareAudioCodecManufacturer];
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    // 创建编码器
+</span></span><span class="line"><span class="cl">    /*
+</span></span><span class="line"><span class="cl">     inAudioStreamBasicDescription 传入源音频格式
+</span></span><span class="line"><span class="cl">     outAudioStreamBasicDescription 目标音频格式
+</span></span><span class="line"><span class="cl">     第三个参数：传入音频编码器的个数
+</span></span><span class="line"><span class="cl">     description 传入音频编码器的描述
+</span></span><span class="line"><span class="cl">     */
+</span></span><span class="line"><span class="cl">    OSStatus status = AudioConverterNewSpecific(&amp;inAudioStreamBasicDescription, &amp;outAudioStreamBasicDescription, 1, description, &amp;_audioConverter);
+</span></span><span class="line"><span class="cl">    if (status != 0) {
+</span></span><span class="line"><span class="cl">        NSLog(@&#34;创建编码器失败&#34;);
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">// 获取编码器描述
+</span></span><span class="line"><span class="cl">/*type   编码格式
+</span></span><span class="line"><span class="cl"> manufacturer  软/硬编 kAppleHardwareAudioCodecManufacturer、kAppleSoftwareAudioCodecManufacturer
+</span></span><span class="line"><span class="cl"> */
+</span></span><span class="line"><span class="cl">- (AudioClassDescription *)getAudioClassDescriptionWithType:(UInt32)type
+</span></span><span class="line"><span class="cl">                                           fromManufacturer:(UInt32)manufacturer
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">    NSLog(@&#34;开始获取编码器。。。。&#34;);
+</span></span><span class="line"><span class="cl">    // 选择aac编码
+</span></span><span class="line"><span class="cl">    /*AudioClassDescription结构体包含以下成员
+</span></span><span class="line"><span class="cl">     OSType  mType;
+</span></span><span class="line"><span class="cl">     OSType  mSubType;
+</span></span><span class="line"><span class="cl">     OSType  mManufacturer;
+</span></span><span class="line"><span class="cl">     */
+</span></span><span class="line"><span class="cl">    static AudioClassDescription desc;
+</span></span><span class="line"><span class="cl">    UInt32 encoderS = type;
+</span></span><span class="line"><span class="cl">    OSStatus status;
+</span></span><span class="line"><span class="cl">    UInt32 size;
+</span></span><span class="line"><span class="cl">    /*获取所用有的编码器属性信息
+</span></span><span class="line"><span class="cl">     kAudioFormatProperty_Encoders 编码ID
+</span></span><span class="line"><span class="cl">     编码说明大小
+</span></span><span class="line"><span class="cl">     编码类型
+</span></span><span class="line"><span class="cl">     属性当前值的大小
+</span></span><span class="line"><span class="cl">     */
+</span></span><span class="line"><span class="cl">    status = AudioFormatGetPropertyInfo(kAudioFormatProperty_Encoders, sizeof(encoderS), &amp;encoderS, &amp;size);
+</span></span><span class="line"><span class="cl">    if (status) {
+</span></span><span class="line"><span class="cl">        NSLog(@&#34;编码aac错误&#34;);
+</span></span><span class="line"><span class="cl">        return nil;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    // 计算编码器的个数
+</span></span><span class="line"><span class="cl">    unsigned int count = size / sizeof(AudioClassDescription);
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    // 定义编码器数组
+</span></span><span class="line"><span class="cl">    AudioClassDescription description[count];
+</span></span><span class="line"><span class="cl">    //分配编码器属性信息到数组
+</span></span><span class="line"><span class="cl">    status = AudioFormatGetProperty(kAudioFormatProperty_Encoders, sizeof(encoderS), &amp;encoderS, &amp;size, description);
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    for (unsigned int i = 0; i &lt; count; i++) {
+</span></span><span class="line"><span class="cl">        if (type == description[i].mSubType &amp;&amp; manufacturer == description[i].mManufacturer) {
+</span></span><span class="line"><span class="cl">            // 拷贝编码器到desc
+</span></span><span class="line"><span class="cl">            memcpy(&amp;desc, &amp;description[i], sizeof(desc));
+</span></span><span class="line"><span class="cl">            NSLog(@&#34;找到aac编码器&#34;);
+</span></span><span class="line"><span class="cl">            return &amp;desc;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    return nil;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">// 编码数据
+</span></span><span class="line"><span class="cl">- (void)encodeAudioSampleBuffer:(CMSampleBufferRef)sampleBuffer {
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    CFRetain(sampleBuffer);
+</span></span><span class="line"><span class="cl">    dispatch_sync(_encoderQueue, ^{
+</span></span><span class="line"><span class="cl">        if (!_audioConverter) {
+</span></span><span class="line"><span class="cl">            // 配置编码参数
+</span></span><span class="line"><span class="cl">            [self setupEncoderFromSampleBuffer:sampleBuffer];
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        // 获取CMBlockBufferRef
+</span></span><span class="line"><span class="cl">        CMBlockBufferRef blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
+</span></span><span class="line"><span class="cl">        CFRetain(blockBuffer);
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        // 获取_pcmBufferSize 和 _pcmBuffer
+</span></span><span class="line"><span class="cl">        OSStatus status = CMBlockBufferGetDataPointer(blockBuffer, 0, NULL, &amp;self-&gt;_pcmBufferSize, &amp;self-&gt;_pcmBuffer);
+</span></span><span class="line"><span class="cl">        if (status != kCMBlockBufferNoErr) {
+</span></span><span class="line"><span class="cl">            NSLog(@&#34;获取 pcmBuffer 数据错误&#34;);
+</span></span><span class="line"><span class="cl">            return ;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        // 清空
+</span></span><span class="line"><span class="cl">        memset(self-&gt;_aacBuffer, 0, self-&gt;_aacBufferSize);
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        // 初始化缓冲列表
+</span></span><span class="line"><span class="cl">        AudioBufferList outAudioBufferList = {0}; // 结构体
+</span></span><span class="line"><span class="cl">        // 缓冲区个数
+</span></span><span class="line"><span class="cl">        outAudioBufferList.mNumberBuffers = 1;
+</span></span><span class="line"><span class="cl">        // 渠道个数
+</span></span><span class="line"><span class="cl">        outAudioBufferList.mBuffers[0].mNumberChannels = 1;
+</span></span><span class="line"><span class="cl">        // 缓存区大小
+</span></span><span class="line"><span class="cl">        outAudioBufferList.mBuffers[0].mDataByteSize = (int)self-&gt;_aacBufferSize;
+</span></span><span class="line"><span class="cl">        // 缓冲区内容
+</span></span><span class="line"><span class="cl">        outAudioBufferList.mBuffers[0].mData = self-&gt;_aacBuffer;
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        // 编码
+</span></span><span class="line"><span class="cl">        AudioStreamPacketDescription * outPD = NULL;
+</span></span><span class="line"><span class="cl">        UInt32 inPutSize = 1;
+</span></span><span class="line"><span class="cl">        /*
+</span></span><span class="line"><span class="cl">         _audioConverter 音频编码上下文
+</span></span><span class="line"><span class="cl">         inInputDataProc 自己实现的编码数据的callback引用
+</span></span><span class="line"><span class="cl">         self 获取的数据
+</span></span><span class="line"><span class="cl">         inPutSize 输出数据的长度
+</span></span><span class="line"><span class="cl">         outAudioBUfferList 输出的缓冲区列表数据
+</span></span><span class="line"><span class="cl">         outPD  输出数据的描述
+</span></span><span class="line"><span class="cl">         */
+</span></span><span class="line"><span class="cl">        status = AudioConverterFillComplexBuffer(self-&gt;_audioConverter,
+</span></span><span class="line"><span class="cl">                                                 inInputDataProc,
+</span></span><span class="line"><span class="cl">                                                 (__bridge void*)self,
+</span></span><span class="line"><span class="cl">                                                 &amp;inPutSize,
+</span></span><span class="line"><span class="cl">                                                 &amp;outAudioBufferList,
+</span></span><span class="line"><span class="cl">                                                 outPD
+</span></span><span class="line"><span class="cl">                                                 );
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        // 编码后完成,AudioConverterFillComplexBuffer方法返回的是AAC原始码流，需要在AAC每帧添加ADTS头
+</span></span><span class="line"><span class="cl">        NSData * data = nil;
+</span></span><span class="line"><span class="cl">        if (status == noErr) {
+</span></span><span class="line"><span class="cl">            // 获取缓冲区的原始数据acc数据
+</span></span><span class="line"><span class="cl">            NSData * rawAAC = [NSData dataWithBytes:outAudioBufferList.mBuffers[0].mData length:outAudioBufferList.mBuffers[0].mDataByteSize];
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            // 加头ADTS
+</span></span><span class="line"><span class="cl">            NSData * adtsHeader = [self adtsDataForPacketLength:rawAAC.length];
+</span></span><span class="line"><span class="cl">            NSMutableData * fullData = [NSMutableData dataWithData:adtsHeader];
+</span></span><span class="line"><span class="cl">            [fullData appendData:rawAAC];
+</span></span><span class="line"><span class="cl">            data = fullData;
+</span></span><span class="line"><span class="cl">        } else {
+</span></span><span class="line"><span class="cl">            NSLog(@&#34;数据错误&#34;);
+</span></span><span class="line"><span class="cl">            return;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">     
+</span></span><span class="line"><span class="cl">        // 写入数据
+</span></span><span class="line"><span class="cl">        [self.audioFileHandle writeData:data];
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        CFRelease(sampleBuffer);
+</span></span><span class="line"><span class="cl">        CFRelease(blockBuffer);
+</span></span><span class="line"><span class="cl">    });
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">// audioToolBox回调函数，将数据写入缓冲区
+</span></span><span class="line"><span class="cl">OSStatus inInputDataProc(AudioConverterRef inAudioConverter, UInt32 *ioNumberDataPackets, AudioBufferList *ioData, AudioStreamPacketDescription **outDataPacketDescription, void *inUserData)
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">    // 编码器
+</span></span><span class="line"><span class="cl">    Nextvc *encoder = (__bridge Nextvc *) inUserData;
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    // 编码包的数据
+</span></span><span class="line"><span class="cl">    UInt32 requestPackes = *ioNumberDataPackets;
+</span></span><span class="line"><span class="cl">    // 将ioData填充到缓冲区
+</span></span><span class="line"><span class="cl">    size_t cp = [encoder copyPCMSamplesIntoBuffer:ioData];
+</span></span><span class="line"><span class="cl">    if (cp &lt; requestPackes) {
+</span></span><span class="line"><span class="cl">        //PCM 缓冲区还没满
+</span></span><span class="line"><span class="cl">        *ioNumberDataPackets = 0; // 清空
+</span></span><span class="line"><span class="cl">        return -1;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    *ioNumberDataPackets = 1;
+</span></span><span class="line"><span class="cl">    return noErr;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">// pcm -&gt; 缓冲区
+</span></span><span class="line"><span class="cl">- (size_t)copyPCMSamplesIntoBuffer:(AudioBufferList*)ioData {
+</span></span><span class="line"><span class="cl">    // 获取pcm大小
+</span></span><span class="line"><span class="cl">    size_t os = _pcmBufferSize;
+</span></span><span class="line"><span class="cl">    if (!_pcmBufferSize) {
+</span></span><span class="line"><span class="cl">        return 0;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    ioData-&gt;mBuffers[0].mData = _pcmBuffer;
+</span></span><span class="line"><span class="cl">    ioData-&gt;mBuffers[0].mDataByteSize = (int)_pcmBufferSize;
+</span></span><span class="line"><span class="cl">    // 清空
+</span></span><span class="line"><span class="cl">    _pcmBuffer = NULL;
+</span></span><span class="line"><span class="cl">    _pcmBufferSize = 0;
+</span></span><span class="line"><span class="cl">    return os;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">/**
+</span></span><span class="line"><span class="cl"> *  Add ADTS header at the beginning of each and every AAC packet.
+</span></span><span class="line"><span class="cl"> *  This is needed as MediaCodec encoder generates a packet of raw
+</span></span><span class="line"><span class="cl"> *  AAC data.
+</span></span><span class="line"><span class="cl"> *
+</span></span><span class="line"><span class="cl"> *  Note the packetLen must count in the ADTS header itself.
+</span></span><span class="line"><span class="cl"> 注意：packetLen 必须在ADTS头身计算
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> **/
+</span></span><span class="line"><span class="cl">- (NSData*)adtsDataForPacketLength:(NSUInteger)packetLength {
+</span></span><span class="line"><span class="cl">    int adtsLength = 7;
+</span></span><span class="line"><span class="cl">    char *packet = malloc(sizeof(char) * adtsLength);
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    int profile = 2;
+</span></span><span class="line"><span class="cl">    int freqIdx = 4;
+</span></span><span class="line"><span class="cl">    int chanCfg = 1;
+</span></span><span class="line"><span class="cl">    NSUInteger fullLength = adtsLength + packetLength;
+</span></span><span class="line"><span class="cl">    packet[0] = (char)0xFF;
+</span></span><span class="line"><span class="cl">    packet[1] = (char)0xF9;
+</span></span><span class="line"><span class="cl">    packet[2] = (char)(((profile-1)&lt;&lt;6) + (freqIdx&lt;&lt;2) +(chanCfg&gt;&gt;2));
+</span></span><span class="line"><span class="cl">    packet[3] = (char)(((chanCfg&amp;3)&lt;&lt;6) + (fullLength&gt;&gt;11));
+</span></span><span class="line"><span class="cl">    packet[4] = (char)((fullLength&amp;0x7FF) &gt;&gt; 3);
+</span></span><span class="line"><span class="cl">    packet[5] = (char)(((fullLength&amp;7)&lt;&lt;5) + 0x1F);
+</span></span><span class="line"><span class="cl">    packet[6] = (char)0xFC;
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    NSData *data = [NSData dataWithBytesNoCopy:packet length:adtsLength freeWhenDone:YES];
+</span></span><span class="line"><span class="cl">    return data;
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>FFmpeg 中的硬编码：</strong></p>
+<ul>
+<li>FFmpeg 中的硬编码有 videotoolbox（苹果的 ios 和 MACos）、mediacodec（安卓的）、qsv（Intel 的 LIBMFX api）、DXVA（是微软定制的视频加速规范，如 DXVA2 / D3D11VA）、VDPAU（在 Linux 平台上由 NVIDIA 指定的加速规范）、VAAPI（在 Linux 平台上由 Intel 提供的加速规范）</li>
+</ul>
+<p><strong>Intel 支持的硬编码：</strong></p>
+<ul>
+<li>windows：libmfx（Intel 自己的 api，FFmpeg 中 qsv 技术对外接口就是 LIBMF）、DXVA2 / D3D11VA（微软出的对 Intel 支持的 api，FFmpeg 中有封装）、Media Foundation（微软出的对 Intel 支持的 api）</li>
+<li>linux：VAAPI（Intel 自己的 api，FFmpeg 中有封装）、libmfx（Intel 自己的 api，FFmpeg 中 qsv 技术对外接口就是 LIBMF）</li>
+</ul>
+<p><strong>NVIDIA 支持的硬编码：</strong></p>
+<ul>
+<li>windows：CUDA（NVIDIA 自己的 api，FFmpeg 中封装包含 NVENC（硬编码）和 NVCUVID（硬解码））</li>
+<li>linux：CUDA（NVIDIA 自己的 api，FFmpeg 中封装包含 NVENC（硬编码）和 NVCUVID（硬解码））、VDPAU（FFmpeg 中有封装）</li>
+</ul>
+<p>硬解码：</p>
+<p>问题和优化方案：https://www.jianshu.com/p/57581485717b</p>
+<p>硬编解码图示：https://www.cnblogs.com/edisongz/p/7062098.html</p>
+<p><strong>videoToolBox 硬解码</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">NALU + SPS,PPS—&gt;CMBlockBuffer—&gt;CMSampleBufferRef，再将CMSampleBufferRef包装的帧数据输入到 VTDecompressionSessionDecodeFrame，通过回调中CVImageBufferRef 直接上传OpenGL ES 显示。
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  序列参数集SPS（sequence Parameter Set）：作用于一系列连续的编码图像
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  图像参数集PPS(Picture Parameter Set)：作用于编码视频序列中一个或多个独立的图像；
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>硬解码流程：</strong><br>
+1、解析 H264 数据</p>
+<p>解码前的 CMSampleBuffer = CMTime + FormatDesc + CMBlockBuffer。需要从 H264 的码流里面提取出以上的三个信息。最后组合成 CMSampleBuffer，提供给硬解码接口来进行解码工作。</p>
+<p>NALU 单元包含视频图像数据和 H264 的参数信息。其中视频图像数据就是 CMBlockBuffer，而 H264 的参数信息则可以组合成 FormatDesc。</p>
+<p>2、初始化解码器（VTDecompressionSessionCreate）<br>
+3、将解析后的 H264 数据送入解码器（VTDecompressionSessionDecodeFrame）<br>
+4、解码器回调输出解码后的数据（CVImageBufferRef）</p>
+<p><em>代码示例：</em></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span><span class="lnt">146
+</span><span class="lnt">147
+</span><span class="lnt">148
+</span><span class="lnt">149
+</span><span class="lnt">150
+</span><span class="lnt">151
+</span><span class="lnt">152
+</span><span class="lnt">153
+</span><span class="lnt">154
+</span><span class="lnt">155
+</span><span class="lnt">156
+</span><span class="lnt">157
+</span><span class="lnt">158
+</span><span class="lnt">159
+</span><span class="lnt">160
+</span><span class="lnt">161
+</span><span class="lnt">162
+</span><span class="lnt">163
+</span><span class="lnt">164
+</span><span class="lnt">165
+</span><span class="lnt">166
+</span><span class="lnt">167
+</span><span class="lnt">168
+</span><span class="lnt">169
+</span><span class="lnt">170
+</span><span class="lnt">171
+</span><span class="lnt">172
+</span><span class="lnt">173
+</span><span class="lnt">174
+</span><span class="lnt">175
+</span><span class="lnt">176
+</span><span class="lnt">177
+</span><span class="lnt">178
+</span><span class="lnt">179
+</span><span class="lnt">180
+</span><span class="lnt">181
+</span><span class="lnt">182
+</span><span class="lnt">183
+</span><span class="lnt">184
+</span><span class="lnt">185
+</span><span class="lnt">186
+</span><span class="lnt">187
+</span><span class="lnt">188
+</span><span class="lnt">189
+</span><span class="lnt">190
+</span><span class="lnt">191
+</span><span class="lnt">192
+</span><span class="lnt">193
+</span><span class="lnt">194
+</span><span class="lnt">195
+</span><span class="lnt">196
+</span><span class="lnt">197
+</span><span class="lnt">198
+</span><span class="lnt">199
+</span><span class="lnt">200
+</span><span class="lnt">201
+</span><span class="lnt">202
+</span><span class="lnt">203
+</span><span class="lnt">204
+</span><span class="lnt">205
+</span><span class="lnt">206
+</span><span class="lnt">207
+</span><span class="lnt">208
+</span><span class="lnt">209
+</span><span class="lnt">210
+</span><span class="lnt">211
+</span><span class="lnt">212
+</span><span class="lnt">213
+</span><span class="lnt">214
+</span><span class="lnt">215
+</span><span class="lnt">216
+</span><span class="lnt">217
+</span><span class="lnt">218
+</span><span class="lnt">219
+</span><span class="lnt">220
+</span><span class="lnt">221
+</span><span class="lnt">222
+</span><span class="lnt">223
+</span><span class="lnt">224
+</span><span class="lnt">225
+</span><span class="lnt">226
+</span><span class="lnt">227
+</span><span class="lnt">228
+</span><span class="lnt">229
+</span><span class="lnt">230
+</span><span class="lnt">231
+</span><span class="lnt">232
+</span><span class="lnt">233
+</span><span class="lnt">234
+</span><span class="lnt">235
+</span><span class="lnt">236
+</span><span class="lnt">237
+</span><span class="lnt">238
+</span><span class="lnt">239
+</span><span class="lnt">240
+</span><span class="lnt">241
+</span><span class="lnt">242
+</span><span class="lnt">243
+</span><span class="lnt">244
+</span><span class="lnt">245
+</span><span class="lnt">246
+</span><span class="lnt">247
+</span><span class="lnt">248
+</span><span class="lnt">249
+</span><span class="lnt">250
+</span><span class="lnt">251
+</span><span class="lnt">252
+</span><span class="lnt">253
+</span><span class="lnt">254
+</span><span class="lnt">255
+</span><span class="lnt">256
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="o">/**</span> <span class="n">sps数据</span> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">assign</span><span class="p">)</span> <span class="n">uint8_t</span> <span class="o">*</span><span class="n">sps</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">/**</span> <span class="n">sps数据长度</span> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">assign</span><span class="p">)</span> <span class="n">NSInteger</span> <span class="n">spsSize</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">/**</span> <span class="n">pps数据</span> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">assign</span><span class="p">)</span> <span class="n">uint8_t</span> <span class="o">*</span><span class="n">pps</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">/**</span> <span class="n">pps数据长度</span> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">assign</span><span class="p">)</span> <span class="n">NSInteger</span> <span class="n">ppsSize</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">/**</span> <span class="err">解码器句柄</span> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">assign</span><span class="p">)</span> <span class="n">VTDecompressionSessionRef</span> <span class="n">deocderSession</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">/**</span> <span class="err">视频解码信息句柄</span> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">assign</span><span class="p">)</span> <span class="n">CMVideoFormatDescriptionRef</span> <span class="n">decoderFormatDescription</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">/*</span>
+</span></span><span class="line"><span class="cl"><span class="o">*</span><span class="err">读取本地视频文件</span>
+</span></span><span class="line"><span class="cl"><span class="o">*/</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">/**</span>
+</span></span><span class="line"><span class="cl"> <span class="err">解码</span><span class="n">NALU数据</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="n">param</span> <span class="n">naluData</span> <span class="n">NALU数据</span>
+</span></span><span class="line"><span class="cl"> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span><span class="p">(</span><span class="n">void</span><span class="p">)</span><span class="n">decodeNaluData</span><span class="p">:(</span><span class="n">NSData</span> <span class="o">*</span><span class="p">)</span><span class="n">naluData</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">frame</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint8_t</span> <span class="o">*</span><span class="p">)</span><span class="n">naluData</span><span class="o">.</span><span class="n">bytes</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint32_t</span> <span class="n">frameSize</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint32_t</span><span class="p">)</span><span class="n">naluData</span><span class="o">.</span><span class="n">length</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">frame的前4位是NALU数据的开始码</span><span class="err">，也就是</span><span class="mi">00</span> <span class="mi">00</span> <span class="mi">00</span> <span class="mi">01</span><span class="err">，第</span><span class="mi">5</span><span class="err">个字节是表示数据类型，转为</span><span class="mi">10</span><span class="err">进制后，</span><span class="mi">7</span><span class="err">是</span><span class="n">sps</span><span class="p">,</span><span class="mi">8</span><span class="err">是</span><span class="n">pps</span><span class="p">,</span><span class="mi">5</span><span class="err">是</span><span class="n">IDR</span><span class="err">（</span><span class="n">I帧</span><span class="err">）信息</span>
+</span></span><span class="line"><span class="cl">    <span class="ne">int</span> <span class="n">nalu_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">frame</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x1F</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">/*</span> <span class="err">将</span><span class="n">NALU的开始码替换成NALU的长度信息</span>
+</span></span><span class="line"><span class="cl">    <span class="err">方法一：</span>
+</span></span><span class="line"><span class="cl">     <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="n">uint32_t</span> <span class="n">nalSize</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint32_t</span><span class="p">)(</span><span class="n">frameSize</span> <span class="o">-</span> <span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">pNalSize</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint8_t</span><span class="o">*</span><span class="p">)(</span><span class="o">&amp;</span><span class="n">nalSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="n">frame</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="n">pNalSize</span> <span class="o">+</span> <span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="n">frame</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="n">pNalSize</span> <span class="o">+</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="n">frame</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="n">pNalSize</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span>    <span class="n">frame</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="n">pNalSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">方法二：</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint32_t</span> <span class="n">nalSize</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint32_t</span><span class="p">)(</span><span class="n">frameSize</span> <span class="o">-</span> <span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint32_t</span> <span class="o">*</span><span class="n">pNalSize</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint32_t</span> <span class="o">*</span><span class="p">)</span><span class="n">frame</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="n">pNalSize</span> <span class="o">=</span> <span class="n">CFSwapInt32HostToBig</span><span class="p">(</span><span class="n">nalSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">switch</span> <span class="p">(</span><span class="n">nalu_type</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="mh">0x05</span><span class="p">:</span> <span class="o">//</span> <span class="n">I帧</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;NALU type is IDR frame&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span><span class="p">([</span><span class="bp">self</span> <span class="n">initH264Decoder</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="p">[</span><span class="bp">self</span> <span class="n">decode</span><span class="p">:</span><span class="n">frame</span> <span class="n">withSize</span><span class="p">:</span><span class="n">frameSize</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="mh">0x07</span><span class="p">:</span> <span class="o">//</span> <span class="n">SPS</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;NALU type is SPS frame&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">_spsSize</span> <span class="o">=</span> <span class="n">frameSize</span> <span class="o">-</span> <span class="mi">4</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">_sps</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">_spsSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">memcpy</span><span class="p">(</span><span class="n">_sps</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">frame</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">_spsSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="mh">0x08</span><span class="p">:</span> <span class="o">//</span> <span class="n">PPS</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;NALU type is PPS frame&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">_ppsSize</span> <span class="o">=</span> <span class="n">frameSize</span> <span class="o">-</span> <span class="mi">4</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">_pps</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">_ppsSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">memcpy</span><span class="p">(</span><span class="n">_pps</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">frame</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">_ppsSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">        <span class="n">default</span><span class="p">:</span> <span class="o">//</span> <span class="n">B帧或P帧</span>
+</span></span><span class="line"><span class="cl">            <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;NALU type is B/P frame&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span><span class="p">([</span><span class="bp">self</span> <span class="n">initH264Decoder</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="p">[</span><span class="bp">self</span> <span class="n">decode</span><span class="p">:</span><span class="n">frame</span> <span class="n">withSize</span><span class="p">:</span><span class="n">frameSize</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">/**</span>
+</span></span><span class="line"><span class="cl"> <span class="err">初始化解码器</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="k">return</span> <span class="err">结果</span>
+</span></span><span class="line"><span class="cl"> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span><span class="p">(</span><span class="n">BOOL</span><span class="p">)</span><span class="n">initH264Decoder</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span><span class="p">(</span><span class="n">_deocderSession</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">YES</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">uint8_t</span><span class="o">*</span> <span class="k">const</span> <span class="n">parameterSetPointers</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">_sps</span><span class="p">,</span> <span class="n">_pps</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">size_t</span> <span class="n">parameterSetSizes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">_spsSize</span><span class="p">,</span> <span class="n">_ppsSize</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">根据</span><span class="n">sps</span> <span class="n">pps创建解码视频参数</span>
+</span></span><span class="line"><span class="cl">    <span class="n">OSStatus</span> <span class="n">status</span> <span class="o">=</span> <span class="n">CMVideoFormatDescriptionCreateFromH264ParameterSets</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">parameterSetPointers</span><span class="p">,</span> <span class="n">parameterSetSizes</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">_decoderFormatDescription</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span><span class="p">(</span><span class="n">status</span> <span class="o">!=</span> <span class="n">noErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;H264Decoder::CMVideoFormatDescriptionCreateFromH264ParameterSets failed status = </span><span class="si">%d</span><span class="s2">&#34;</span><span class="p">,</span> <span class="p">(</span><span class="ne">int</span><span class="p">)</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">从</span><span class="n">sps</span> <span class="n">pps中获取解码视频的宽高信息</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CMVideoDimensions</span> <span class="n">dimensions</span> <span class="o">=</span> <span class="n">CMVideoFormatDescriptionGetDimensions</span><span class="p">(</span><span class="n">_decoderFormatDescription</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">kCVPixelBufferPixelFormatTypeKey</span> <span class="err">解码图像的采样格式</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">kCVPixelBufferWidthKey</span><span class="err">、</span><span class="n">kCVPixelBufferHeightKey</span> <span class="err">解码图像的宽高</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">kCVPixelBufferOpenGLCompatibilityKey制定支持OpenGL渲染</span><span class="err">，经测试有没有这个参数好像没什么差别</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSDictionary</span><span class="o">*</span> <span class="n">destinationPixelBufferAttributes</span> <span class="o">=</span> <span class="err">@</span><span class="p">{(</span><span class="n">id</span><span class="p">)</span><span class="n">kCVPixelBufferPixelFormatTypeKey</span> <span class="p">:</span> <span class="err">@</span><span class="p">(</span><span class="n">kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange</span><span class="p">),</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="n">kCVPixelBufferWidthKey</span> <span class="p">:</span> <span class="err">@</span><span class="p">(</span><span class="n">dimensions</span><span class="o">.</span><span class="n">width</span><span class="p">),</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="n">kCVPixelBufferHeightKey</span> <span class="p">:</span> <span class="err">@</span><span class="p">(</span><span class="n">dimensions</span><span class="o">.</span><span class="n">height</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">                                                       <span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="n">kCVPixelBufferOpenGLCompatibilityKey</span> <span class="p">:</span> <span class="err">@</span><span class="p">(</span><span class="n">YES</span><span class="p">)};</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">设置解码输出数据回调</span>
+</span></span><span class="line"><span class="cl">    <span class="n">VTDecompressionOutputCallbackRecord</span> <span class="n">callBackRecord</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">callBackRecord</span><span class="o">.</span><span class="n">decompressionOutputCallback</span> <span class="o">=</span> <span class="n">decodeOutputDataCallback</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">callBackRecord</span><span class="o">.</span><span class="n">decompressionOutputRefCon</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">void</span> <span class="o">*</span><span class="p">)</span><span class="bp">self</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">创建解码器</span>
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="n">VTDecompressionSessionCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="n">_decoderFormatDescription</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">CFDictionaryRef</span><span class="p">)</span><span class="n">destinationPixelBufferAttributes</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">callBackRecord</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">_deocderSession</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">解码线程数量</span>
+</span></span><span class="line"><span class="cl">    <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">_deocderSession</span><span class="p">,</span> <span class="n">kVTDecompressionPropertyKey_ThreadCount</span><span class="p">,</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">CFTypeRef</span><span class="p">)</span><span class="err">@</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">是否实时解码</span>
+</span></span><span class="line"><span class="cl">    <span class="n">VTSessionSetProperty</span><span class="p">(</span><span class="n">_deocderSession</span><span class="p">,</span> <span class="n">kVTDecompressionPropertyKey_RealTime</span><span class="p">,</span> <span class="n">kCFBooleanTrue</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">YES</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">/**</span>
+</span></span><span class="line"><span class="cl"> <span class="err">解码数据</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="n">param</span> <span class="n">frame</span> <span class="err">数据</span>
+</span></span><span class="line"><span class="cl"> <span class="err">@</span><span class="n">param</span> <span class="n">frameSize</span> <span class="err">数据长度</span>
+</span></span><span class="line"><span class="cl"> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span><span class="p">(</span><span class="n">void</span><span class="p">)</span><span class="n">decode</span><span class="p">:(</span><span class="n">uint8_t</span> <span class="o">*</span><span class="p">)</span><span class="n">frame</span> <span class="n">withSize</span><span class="p">:(</span><span class="n">uint32_t</span><span class="p">)</span><span class="n">frameSize</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CMBlockBufferRef</span> <span class="n">blockBuffer</span> <span class="o">=</span> <span class="n">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">创建</span> <span class="n">CMBlockBufferRef</span>
+</span></span><span class="line"><span class="cl">    <span class="n">OSStatus</span> <span class="n">status</span>  <span class="o">=</span> <span class="n">CMBlockBufferCreateWithMemoryBlock</span><span class="p">(</span><span class="n">NULL</span><span class="p">,</span> <span class="p">(</span><span class="n">void</span> <span class="o">*</span><span class="p">)</span><span class="n">frame</span><span class="p">,</span> <span class="n">frameSize</span><span class="p">,</span> <span class="n">kCFAllocatorNull</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">frameSize</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">blockBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span><span class="p">(</span><span class="n">status</span> <span class="o">!=</span> <span class="n">kCMBlockBufferNoErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CMSampleBufferRef</span> <span class="n">sampleBuffer</span> <span class="o">=</span> <span class="n">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">size_t</span> <span class="n">sampleSizeArray</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span><span class="n">frameSize</span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">创建</span> <span class="n">CMSampleBufferRef</span>
+</span></span><span class="line"><span class="cl">    <span class="n">status</span> <span class="o">=</span> <span class="n">CMSampleBufferCreateReady</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="n">blockBuffer</span><span class="p">,</span> <span class="n">_decoderFormatDescription</span> <span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sampleSizeArray</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sampleBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">!=</span> <span class="n">kCMBlockBufferNoErr</span> <span class="o">||</span> <span class="n">sampleBuffer</span> <span class="o">==</span> <span class="n">NULL</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">VTDecodeFrameFlags</span> <span class="mi">0</span><span class="err">为允许多线程解码</span>
+</span></span><span class="line"><span class="cl">    <span class="n">VTDecodeFrameFlags</span> <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">VTDecodeInfoFlags</span> <span class="n">flagOut</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">解码</span> <span class="err">这里第四个参数会传到解码的</span><span class="n">callback里的sourceFrameRefCon</span><span class="err">，可为空</span>
+</span></span><span class="line"><span class="cl">    <span class="n">OSStatus</span> <span class="n">decodeStatus</span> <span class="o">=</span> <span class="n">VTDecompressionSessionDecodeFrame</span><span class="p">(</span><span class="n">_deocderSession</span><span class="p">,</span> <span class="n">sampleBuffer</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">flagOut</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">if</span><span class="p">(</span><span class="n">decodeStatus</span> <span class="o">==</span> <span class="n">kVTInvalidSessionErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;H264Decoder::Invalid session, reset decoder session&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">decodeStatus</span> <span class="o">==</span> <span class="n">kVTVideoDecoderBadDataErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;H264Decoder::decode failed status = </span><span class="si">%d</span><span class="s2">(Bad data)&#34;</span><span class="p">,</span> <span class="p">(</span><span class="ne">int</span><span class="p">)</span><span class="n">decodeStatus</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">decodeStatus</span> <span class="o">!=</span> <span class="n">noErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;H264Decoder::decode failed status = </span><span class="si">%d</span><span class="s2">&#34;</span><span class="p">,</span> <span class="p">(</span><span class="ne">int</span><span class="p">)</span><span class="n">decodeStatus</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">Create了就得Release</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CFRelease</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CFRelease</span><span class="p">(</span><span class="n">blockBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">//</span><span class="err">解码回调函数</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="n">void</span> <span class="n">decodeOutputDataCallback</span><span class="p">(</span><span class="n">void</span> <span class="o">*</span><span class="n">decompressionOutputRefCon</span><span class="p">,</span> <span class="n">void</span> <span class="o">*</span><span class="n">sourceFrameRefCon</span><span class="p">,</span> <span class="n">OSStatus</span> <span class="n">status</span><span class="p">,</span> <span class="n">VTDecodeInfoFlags</span> <span class="n">infoFlags</span><span class="p">,</span> <span class="n">CVImageBufferRef</span> <span class="n">pixelBuffer</span><span class="p">,</span> <span class="n">CMTime</span> <span class="n">presentationTimeStamp</span><span class="p">,</span> <span class="n">CMTime</span> <span class="n">presentationDuration</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">retain再输出</span><span class="err">，外层去</span><span class="n">release</span><span class="err">；</span><span class="n">pixelBuffer就是解码后的数据</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CVPixelBufferRetain</span><span class="p">(</span><span class="n">pixelBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Nextvc</span> <span class="o">*</span><span class="n">decoder</span> <span class="o">=</span> <span class="p">(</span><span class="n">__bridge</span> <span class="n">Nextvc</span> <span class="o">*</span><span class="p">)</span><span class="n">decompressionOutputRefCon</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">CMSampleBufferRef转换成YUV数据</span><span class="err">、</span><span class="n">YUV数据类型的变换</span><span class="err">：</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">/*</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">1.</span> <span class="n">CMSampleBufferRef</span> <span class="err">中提取</span><span class="n">yuv数据</span><span class="p">(</span><span class="n">Byte</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">2.</span> <span class="err">处理</span><span class="n">yuv数据</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">3.</span> <span class="n">yuv数据</span> <span class="err">转</span><span class="n">CVPixelBufferRef</span> <span class="err">，继续进行编码</span>
+</span></span><span class="line"><span class="cl"> <span class="o">*/</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span><span class="p">(</span><span class="n">CVPixelBufferRef</span><span class="p">)</span><span class="n">processYUV422ToYUV420WithSampleBuffer</span><span class="p">:(</span><span class="n">CMSampleBufferRef</span><span class="p">)</span><span class="n">sampleBuffer</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="mf">1.</span> <span class="err">从</span><span class="n">CMSampleBufferRef中提取yuv数据</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">获取</span><span class="n">yuv数据</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">通过</span><span class="n">CMSampleBufferGetImageBuffer方法</span><span class="err">，获得</span><span class="n">CVImageBufferRef</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="err">这里面就包含了</span><span class="n">yuv420数据的指针</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CVImageBufferRef</span> <span class="n">pixelBuffer_Before</span> <span class="o">=</span> <span class="n">CMSampleBufferGetImageBuffer</span><span class="p">(</span><span class="n">sampleBuffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">表示开始操作数据</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CVPixelBufferLockBaseAddress</span><span class="p">(</span><span class="n">pixelBuffer_Before</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">图像宽度（像素）</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">pixelWidth</span> <span class="o">=</span> <span class="n">CVPixelBufferGetWidth</span><span class="p">(</span><span class="n">pixelBuffer_Before</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">图像高度（像素）</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">pixelHeight</span> <span class="o">=</span> <span class="n">CVPixelBufferGetHeight</span><span class="p">(</span><span class="n">pixelBuffer_Before</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="n">yuv中的y所占字节数</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">y_size</span> <span class="o">=</span> <span class="n">pixelWidth</span> <span class="o">*</span> <span class="n">pixelHeight</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="mf">2.</span> <span class="n">yuv中的u和v分别所占的字节数</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">uv_size</span> <span class="o">=</span> <span class="n">y_size</span> <span class="o">/</span> <span class="mi">4</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">yuv_frame</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">uv_size</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">y_size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">获取</span><span class="n">CVImageBufferRef中的y数据</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">y_frame</span> <span class="o">=</span> <span class="n">CVPixelBufferGetBaseAddressOfPlane</span><span class="p">(</span><span class="n">pixelBuffer_Before</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">memcpy</span><span class="p">(</span><span class="n">yuv_frame</span><span class="p">,</span> <span class="n">y_frame</span><span class="p">,</span> <span class="n">y_size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">获取</span><span class="n">CMVImageBufferRef中的uv数据</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">uv_frame</span> <span class="o">=</span> <span class="n">CVPixelBufferGetBaseAddressOfPlane</span><span class="p">(</span><span class="n">pixelBuffer_Before</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">memcpy</span><span class="p">(</span><span class="n">yuv_frame</span> <span class="o">+</span> <span class="n">y_size</span><span class="p">,</span> <span class="n">uv_frame</span><span class="p">,</span> <span class="n">uv_size</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">CVPixelBufferUnlockBaseAddress</span><span class="p">(</span><span class="n">pixelBuffer_Before</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">NSData</span> <span class="o">*</span><span class="n">yuvData</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSData</span> <span class="n">dataWithBytesNoCopy</span><span class="p">:</span><span class="n">yuv_frame</span> <span class="n">length</span><span class="p">:</span><span class="n">y_size</span> <span class="o">+</span> <span class="n">uv_size</span> <span class="o">*</span> <span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="mf">3.</span> <span class="n">yuv</span> <span class="err">变成</span> <span class="err">转</span><span class="n">CVPixelBufferRef</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">现在要把</span><span class="n">NV12数据放入</span> <span class="n">CVPixelBufferRef中</span><span class="err">，因为</span> <span class="err">硬编码主要调用</span><span class="n">VTCompressionSessionEncodeFrame函数</span><span class="err">，此函数不接受</span><span class="n">yuv数据</span><span class="err">，但是接受</span><span class="n">CVPixelBufferRef类型</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CVPixelBufferRef</span> <span class="n">pixelBuf_After</span> <span class="o">=</span> <span class="n">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">初始化</span><span class="n">pixelBuf</span><span class="err">，数据类型是</span><span class="n">kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange</span><span class="err">，此类型数据格式同</span><span class="n">NV12格式相同</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">    <span class="n">CVPixelBufferCreate</span><span class="p">(</span><span class="n">NULL</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">pixelWidth</span><span class="p">,</span> <span class="n">pixelHeight</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">NULL</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="o">&amp;</span><span class="n">pixelBuf_After</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span> <span class="n">Lock</span> <span class="n">address</span><span class="err">，锁定数据，应该是多线程防止重入操作。</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span><span class="p">(</span><span class="n">CVPixelBufferLockBaseAddress</span><span class="p">(</span><span class="n">pixelBuf_After</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="n">kCVReturnSuccess</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">        <span class="n">NSLog</span><span class="p">(</span><span class="err">@</span><span class="s2">&#34;encode video lock base address failed&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">将</span><span class="n">yuv数据填充到CVPixelBufferRef中</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">yuv_frame_2</span> <span class="o">=</span> <span class="p">(</span><span class="n">uint8_t</span> <span class="o">*</span><span class="p">)</span><span class="n">yuvData</span><span class="o">.</span><span class="n">bytes</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="o">//</span><span class="err">处理</span><span class="n">y</span> <span class="n">frame</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">y_frame_2</span> <span class="o">=</span> <span class="n">CVPixelBufferGetBaseAddressOfPlane</span><span class="p">(</span><span class="n">pixelBuf_After</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">memcpy</span><span class="p">(</span><span class="n">y_frame_2</span><span class="p">,</span> <span class="n">yuv_frame_2</span><span class="p">,</span> <span class="n">y_size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">uint8_t</span> <span class="o">*</span><span class="n">uv_frame_2</span> <span class="o">=</span> <span class="n">CVPixelBufferGetBaseAddressOfPlane</span><span class="p">(</span><span class="n">pixelBuf_After</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">memcpy</span><span class="p">(</span><span class="n">uv_frame_2</span><span class="p">,</span> <span class="n">yuv_frame_2</span> <span class="o">+</span> <span class="n">y_size</span><span class="p">,</span> <span class="n">uv_size</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">CVPixelBufferUnlockBaseAddress</span><span class="p">(</span><span class="n">pixelBuf_After</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">pixelBuf_After</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>软硬编码对比：</strong></p>
+<ul>
+<li>软编码：实现直接、简单，参数调整方便，升级易，但 CPU 负载重，性能较硬编码低，低码率下质量通常比硬编码要好一点。</li>
+<li>硬编码：性能高，低码率下通常质量低于软编码器，但部分产品在 GPU 硬件平台移植了优秀的软编码算法（如 X264）的，质量基本等同于软编码。</li>
+</ul>
+<p>苹果在 iOS 8.0 系统之前，没有开放系统的硬件编码解码功能，不过 Mac OS 系统一直有，被称为 Video ToolBox 的框架来处理硬件的编码和解码，终于在 iOS 8.0 后，苹果将该框架引入 iOS 系统。</p>
+<p><strong>.H265 优点</strong></p>
+<ul>
+<li>压缩比高，在相同图片质量情况下，比 JPEG 高两倍</li>
+<li>能增加如图片的深度信息，透明通道等辅助图片。</li>
+<li>支持存放多张图片，类似相册和集合。(实现多重曝光的效果)</li>
+<li>支持多张图片实现 GIF 和 livePhoto 的动画效果。</li>
+<li>无类似 JPEG 的最大像素限制</li>
+<li>支持透明像素</li>
+<li>分块加载机制</li>
+<li>支持缩略图</li>
+</ul>
+<p><strong>在 iOS 平台上做视频的解码，一般有三种方案：</strong></p>
+<ol>
+<li>软解码方案：ffmpeg<br>
+缺点：消耗 CPU 太大</li>
+<li>硬解码方案 1：采用私有接口 VideoToolBox<br>
+优点：CPU 消耗极低，解码效率极高<br>
+缺点：要使用私有接口 VideoToolBox</li>
+<li>硬解码方案 2：采用 AVPlayer＋httpserver＋HttpLiveStream 的组合方案<br>
+优点：CPU 消耗极低，解码效率极高<br>
+缺点：视频有延迟，不适合实时视频通讯</li>
+</ol>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/ios/">IOS</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <div class="disqus-container">
+    <div id="disqus_thread"></div>
+<script>
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "hugo-theme-stack" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+<style>
+    .disqus-container {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (typeof DISQUS == 'object') {
+            DISQUS.reset({
+                reload: true
+            });
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2020 - 
+        
+        2024 Example Person
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.24.2">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

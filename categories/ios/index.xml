@@ -9,10 +9,10 @@
         <copyright>Example Person</copyright>
         <lastBuildDate>Mon, 09 Mar 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://example.com/categories/ios/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>iOS 音视频编解码</title>
-        <link>https://example.com/p/ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/</link>
+        <link>https://example.com/post/media/01_ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/</link>
         <pubDate>Mon, 09 Mar 2020 00:00:00 +0000</pubDate>
         
-        <guid>https://example.com/p/ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/</guid>
+        <guid>https://example.com/post/media/01_ios-%E9%9F%B3%E8%A7%86%E9%A2%91%E7%BC%96%E8%A7%A3%E7%A0%81/</guid>
         <description>&lt;p&gt;原文地址 &lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/sinat_27741463/article/details/102463158&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;blog.csdn.net&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;编解码协议 H264（视频）和 AAC（音频）有软编解码和硬编解码。&lt;/p&gt;

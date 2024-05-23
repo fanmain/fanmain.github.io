@@ -13,6 +13,9 @@
 <meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='iOS' /><meta property='article:published_time' content='2020-03-09T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2020-03-09T00:00:00&#43;00:00'/>
 <meta name="twitter:title" content="iOS 音视频编解码">
 <meta name="twitter:description" content="原文地址 blog.csdn.net 编解码协议 H264（视频）和 AAC（音频）有软编解码和硬编解码。 网络传输都是用的大端序（高地址低字节），H264 网络传输的 startcode 是数据的 length，不是 0x00000001。NALU 有两种格式：Annex B 和 AVCC。Annex B 格式 startcode 以 0x 00 00 01 或 0x 00 00 00 01 开头， AVCC 格式以 NALU 的长度开头。 AAC 也有两种传输格式：ADTS 和 ADIF ADIF：Audio Data Interchange Format 音频数据交换格式。这种格式的特征是可以确定的找到这个音频数据的开始，不需进行在音频数据流中间开始的解码，即它的解码必须在明确定义的开始处进行。故这种格式常用在磁盘文件中。 ADTS：Audio Data Transport Stream 音频数据传输流。这种格式的特征是它是一个有同步字的比特流，解码可以在这个流中任何位置开始。它的特征类似于 mp3 数据流格式。 软编码：使用 CPU 进行编码。编码框架 ffmpeg+x264。 https://www.jianshu.com/p/e631b041e96d https://www.jianshu.com/p/3de01105d735 硬编码：不使用 CPU 进行编码，使用显卡（GPU）进行硬件加速。 专用的 DSP、FPGA、ASIC 芯片等硬件进行编码。ios 上硬编码框架 Video ToolBox 和 AudioToolbox。 Intel 硬编码使用 Intel 处理器内部集成的显卡进行硬件加速，qsv 加速方法便对应着 Intel 硬编码。Intel 硬编码对 H.">
+  
+
+
     </head>
     <body class="
     article-page

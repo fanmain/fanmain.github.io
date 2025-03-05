@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="文章目录 前言 一、HTTP-FLV 简介 1、市场上使用 http-flv 的商家 2、http-flv、rtmp 和 hls 直播的优缺点 3、http-flv 技术实现 二、Nginx 配置 http-flv 1、Windows 安装 nginx，已经集成 nginx-http-flv-module 2、nginx.conf 配置文件 3、运行 nginx 服务器 4、ffmpeg 推流 5、VLC 播放 6、flv.js 网页播放 三、FLV 格式简介 1、简介 2、FLV 格式解析 ①、header ②、body 四、FLV Adobe 官方标准 1、单位说明 2、FLV 文件头和文件体 (E.2, E.3) 3、FLV Tag (E.4) 4、AudioTag (E.4.2) 5、VideoTag (E.4.3) 6、SCRIPTDATA (E.4.4) 7、onMetadata (E.5) 8、keyframes 索引信息 五、FlvAnalyzer 分析 flv 文件 前言 传统的直播协议要么使用 Adobe 的基于 TCP 的 RTMP 协议， 要么使用 Apple 的基于 HTTP 的 HLS 协议。本文介绍另外一种结合了 RTMP 的低延时， 以及可以复用现有 HTTP 分发资源的流式协议 HTTP-FLV。\n">
+<title>02_http Flv</title>
+
+<link rel='canonical' href='http://localhost:1313/post/media/02_http-flv/02_http-flv/'>
+
+<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="02_http Flv">
+<meta property='og:description' content="文章目录 前言 一、HTTP-FLV 简介 1、市场上使用 http-flv 的商家 2、http-flv、rtmp 和 hls 直播的优缺点 3、http-flv 技术实现 二、Nginx 配置 http-flv 1、Windows 安装 nginx，已经集成 nginx-http-flv-module 2、nginx.conf 配置文件 3、运行 nginx 服务器 4、ffmpeg 推流 5、VLC 播放 6、flv.js 网页播放 三、FLV 格式简介 1、简介 2、FLV 格式解析 ①、header ②、body 四、FLV Adobe 官方标准 1、单位说明 2、FLV 文件头和文件体 (E.2, E.3) 3、FLV Tag (E.4) 4、AudioTag (E.4.2) 5、VideoTag (E.4.3) 6、SCRIPTDATA (E.4.4) 7、onMetadata (E.5) 8、keyframes 索引信息 五、FlvAnalyzer 分析 flv 文件 前言 传统的直播协议要么使用 Adobe 的基于 TCP 的 RTMP 协议， 要么使用 Apple 的基于 HTTP 的 HLS 协议。本文介绍另外一种结合了 RTMP 的低延时， 以及可以复用现有 HTTP 分发资源的流式协议 HTTP-FLV。\n">
+<meta property='og:url' content='http://localhost:1313/post/media/02_http-flv/02_http-flv/'>
+<meta property='og:site_name' content='fan&#39;s blog'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2024-04-07T10:42:23&#43;08:00'/><meta property='article:modified_time' content='2024-04-07T10:42:23&#43;08:00'/>
+<meta name="twitter:title" content="02_http Flv">
+<meta name="twitter:description" content="文章目录 前言 一、HTTP-FLV 简介 1、市场上使用 http-flv 的商家 2、http-flv、rtmp 和 hls 直播的优缺点 3、http-flv 技术实现 二、Nginx 配置 http-flv 1、Windows 安装 nginx，已经集成 nginx-http-flv-module 2、nginx.conf 配置文件 3、运行 nginx 服务器 4、ffmpeg 推流 5、VLC 播放 6、flv.js 网页播放 三、FLV 格式简介 1、简介 2、FLV 格式解析 ①、header ②、body 四、FLV Adobe 官方标准 1、单位说明 2、FLV 文件头和文件体 (E.2, E.3) 3、FLV Tag (E.4) 4、AudioTag (E.4.2) 5、VideoTag (E.4.3) 6、SCRIPTDATA (E.4.4) 7、onMetadata (E.5) 8、keyframes 索引信息 五、FlvAnalyzer 分析 flv 文件 前言 传统的直播协议要么使用 Adobe 的基于 TCP 的 RTMP 协议， 要么使用 Apple 的基于 HTTP 的 HLS 协议。本文介绍另外一种结合了 RTMP 的低延时， 以及可以复用现有 HTTP 分发资源的流式协议 HTTP-FLV。\n">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu_6c1f32e22984c769.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍥</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">fan&#39;s blog</a></h1>
+            <h2 class="site-description">不积跬步，无以至千里</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://github.com/CaiJimmy/hugo-theme-stack'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li>
+      <ol>
+        <li>
+          <ol>
+            <li><a href="#文章目录">文章目录</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#一http-flv-简介">一、<a href="https://so.csdn.net/so/search?q=HTTP&amp;spm=1001.2101.3001.7020">HTTP</a>-FLV 简介</a>
+      <ol>
+        <li><a href="#1市场上使用-http-flv-的商家">1、市场上使用 http-flv 的商家</a></li>
+        <li><a href="#2http-flvrtmp-和-hls-直播的优缺点">2、http-flv、rtmp 和 hls 直播的优缺点</a></li>
+        <li><a href="#3http-flv-技术实现">3、http-flv 技术实现</a></li>
+      </ol>
+    </li>
+    <li><a href="#二nginx-配置-http-flv">二、Nginx 配置 http-flv</a>
+      <ol>
+        <li><a href="#1windows-安装-nginx已经集成-nginx-http-flv-module">1、Windows 安装 nginx，已经集成 nginx-http-flv-module</a></li>
+        <li><a href="#2nginxconf-配置文件">2、nginx.conf 配置文件</a></li>
+        <li><a href="#3运行-nginx-服务器">3、运行 nginx 服务器</a></li>
+        <li><a href="#4ffmpeg-推流">4、ffmpeg 推流</a></li>
+        <li><a href="#5vlc-播放">5、VLC 播放</a></li>
+        <li><a href="#6flvjs-网页播放">6、flv.js 网页播放</a></li>
+      </ol>
+    </li>
+    <li><a href="#三flv-格式简介">三、FLV 格式简介</a>
+      <ol>
+        <li><a href="#1简介">1、简介</a></li>
+        <li><a href="#2flv-格式解析">2、FLV 格式解析</a>
+          <ol>
+            <li><a href="#header">①、header</a></li>
+            <li><a href="#body">②、body</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+    <li><a href="#四flv-adobe-官方标准">四、FLV <a href="https://so.csdn.net/so/search?q=Adobe&amp;spm=1001.2101.3001.7020">Adobe</a> 官方标准</a>
+      <ol>
+        <li><a href="#1单位说明">1、单位说明</a></li>
+        <li><a href="#2flv-文件头和文件体-e2-e3">2、FLV 文件头和文件体 (E.2, E.3)</a></li>
+        <li><a href="#3flv-tag-e4">3、FLV Tag (E.4)</a></li>
+        <li><a href="#4audiotag-e42">4、AudioTag (E.4.2)</a></li>
+        <li><a href="#5videotag-e43">5、VideoTag (E.4.3)</a></li>
+        <li><a href="#6scriptdata-e44">6、SCRIPTDATA (E.4.4)</a></li>
+        <li><a href="#7onmetadata-e5">7、onMetadata (E.5)</a></li>
+        <li><a href="#8keyframes-索引信息">8、keyframes 索引信息</a></li>
+      </ol>
+    </li>
+    <li><a href="#五flvanalyzer-分析-flv-文件">五、FlvAnalyzer 分析 flv 文件</a></li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/media/02_http-flv/02_http-flv/">02_http Flv</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Apr 07, 2024</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 6 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h4 id="文章目录">文章目录
+</h4><ul>
+<li><a class="link" href="#" >前言</a></li>
+<li><a class="link" href="#" >一、HTTP-FLV 简介</a></li>
+<li>
+<ul>
+<li><a class="link" href="#" >1、市场上使用 http-flv 的商家</a></li>
+<li><a class="link" href="#" >2、http-flv、rtmp 和 hls 直播的优缺点</a></li>
+<li><a class="link" href="#" >3、http-flv 技术实现</a></li>
+</ul>
+</li>
+<li><a class="link" href="#" >二、Nginx 配置 http-flv</a></li>
+<li>
+<ul>
+<li><a class="link" href="#" >1、Windows 安装 nginx，已经集成 nginx-http-flv-module</a></li>
+<li><a class="link" href="#" >2、nginx.conf 配置文件</a></li>
+<li><a class="link" href="#" >3、运行 nginx 服务器</a></li>
+<li><a class="link" href="#" >4、ffmpeg 推流</a></li>
+<li><a class="link" href="#" >5、VLC 播放</a></li>
+<li><a class="link" href="#" >6、flv.js 网页播放</a></li>
+</ul>
+</li>
+<li><a class="link" href="#" >三、FLV 格式简介</a></li>
+<li>
+<ul>
+<li><a class="link" href="#" >1、简介</a></li>
+<li><a class="link" href="#" >2、FLV 格式解析</a></li>
+<li>
+<ul>
+<li><a class="link" href="#" >①、header</a></li>
+<li><a class="link" href="#" >②、body</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="link" href="#" >四、FLV Adobe 官方标准</a></li>
+<li>
+<ul>
+<li><a class="link" href="#" >1、单位说明</a></li>
+<li><a class="link" href="#" >2、FLV 文件头和文件体 (E.2, E.3)</a></li>
+<li><a class="link" href="#" >3、FLV Tag (E.4)</a></li>
+<li><a class="link" href="#" >4、AudioTag (E.4.2)</a></li>
+<li><a class="link" href="#" >5、VideoTag (E.4.3)</a></li>
+<li><a class="link" href="#" >6、SCRIPTDATA (E.4.4)</a></li>
+<li><a class="link" href="#" >7、onMetadata (E.5)</a></li>
+<li><a class="link" href="#" >8、keyframes 索引信息</a></li>
+</ul>
+</li>
+<li><a class="link" href="#" >五、FlvAnalyzer 分析 flv 文件</a></li>
+</ul>
+<hr>
+<h2 id="前言">前言
+</h2><p>传统的直播<a class="link" href="https://so.csdn.net/so/search?q=%E5%8D%8F%E8%AE%AE&amp;spm=1001.2101.3001.7020"  target="_blank" rel="noopener"
+    >协议</a>要么使用 Adobe 的基于 TCP 的 RTMP 协议， 要么使用 Apple 的基于 HTTP 的 HLS 协议。本文介绍另外一种结合了 RTMP 的低延时， 以及可以复用现有 HTTP 分发资源的流式协议 HTTP-FLV。</p>
+<hr>
+<h2 id="一http-flv-简介">一、<a class="link" href="https://so.csdn.net/so/search?q=HTTP&amp;spm=1001.2101.3001.7020"  target="_blank" rel="noopener"
+    >HTTP</a>-FLV 简介
+</h2><p>HTTP-FLV，即将音视频数据封装成 FLV，然后通过 HTTP 协议传输给客户端。</p>
+<p>HLS 其实是一个 “文本协议” ，而并非流媒体协议，(ts0,ts1,…)。 那么，什么样的协议才能称之为流媒体协议呢？<br>
+答：流（stream）：数据在网络上按时间先后次序传输和播放的连续音/视频数据流。之所以可以按照顺序传输和播放连续是因为在类似 <a class="link" href="https://so.csdn.net/so/search?q=RTMP&amp;spm=1001.2101.3001.7020"  target="_blank" rel="noopener"
+    >RTMP</a>、FLV 协议中，每一个音视频数据都被封装成了包含时间戳信息头的数据包。而当播放器拿到这些数据包解包的时候能够根据时间戳信息把这些音视频数据和之前到达的音视频数据连续起来播放。</p>
+<blockquote>
+<p>MP4、MKV 等等类似这种封装，必须拿到完整的音视频文件才能播放，因为里面的单个音视频数据块不带有时间戳信息，播放器不能将这些没有时间戳信息数据块连续起来，所以就不能实时的解码播放。</p></blockquote>
+<h3 id="1市场上使用-http-flv-的商家">1、市场上使用 http-flv 的商家
+</h3><p>优酷的 pc 网页直播，斗鱼、 熊猫 tv、 虎牙 pc 网页上也使用了 http-flv</p>
+<h3 id="2http-flvrtmp-和-hls-直播的优缺点">2、http-flv、rtmp 和 hls 直播的优缺点
+</h3><ul>
+<li>三者的延迟性
+<ul>
+<li>http-flv：低延迟，内容延迟可以做到 2-5 秒；</li>
+<li>Rtmp：低延迟，内容延迟可以做到 2-5 秒。</li>
+<li>Hls：延迟较高（ts0，segment-time：5，10s）。</li>
+</ul>
+</li>
+<li>三者的易用性
+<ul>
+<li>rtmp 和 http-flv：播放端安装率高。只要浏览器支持 FlashPlayer 就能非常简易的播放。</li>
+<li>hls：最大的优点：HTML5 可以直接打开播放；这个意味着可以把一个直播链接通过微信等转发分享，不需要安装任何独立的 APP，有浏览器即可。</li>
+</ul>
+</li>
+<li>rtmp 和 http-flv 比较
+<ul>
+<li>穿墙：很多防火墙会墙掉 RTMP，但是不会墙 HTTP，因此 HTTP FLV 出现奇怪问题的概率很小。</li>
+<li>调度：RTMP 也有个 302，可惜是播放器 as 中支持的，HTTP FLV 流就支持 302 方便 CDN 纠正 DNS 的错误。</li>
+<li>容错：SRS 的 HTTP FLV 回源时可以回多个，和 RTMP 一样，可以支持多级热备。</li>
+<li>简单：FLV 是最简单的流媒体封装，HTTP 是最广泛的协议，这两个组合在一起维护性更高，比 RTMP 简单多了。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3http-flv-技术实现">3、http-flv 技术实现
+</h3><p>HTTP 协议中有个约定：content-length 字段，http 的 body 部分的长度。</p>
+<ul>
+<li>服务器回复 http 请求的时候如果有这个字段，客户端就接收这个长度的数据然后就认为数据传输完成了。</li>
+<li>如果服务器回复 http 请求中没有这个字段，客户端就一直接收数据，直到服务器跟客户端的 socket 连接断开。 (流式传输）</li>
+</ul>
+<p>http-flv 直播就是利用第二个原理，服务器回复客户端请求的时候不加 content-length 字段，在回复了 http 内容之后，紧接着发送 flv 数据，客户端就一直接收数据了。</p>
+<h2 id="二nginx-配置-http-flv">二、Nginx 配置 http-flv
+</h2><h3 id="1windows-安装-nginx已经集成-nginx-http-flv-module">1、Windows 安装 nginx，已经集成 nginx-http-flv-module
+</h3><p>RTMP 服务器：Nginx+rtmp（windows）的环境搭建如有需要可自取：</p>
+<p>链接：<a class="link" href="https://pan.baidu.com/s/1AcIVERWUPbJL1zu8yCcAzw"  target="_blank" rel="noopener"
+    >https://pan.baidu.com/s/1AcIVERWUPbJL1zu8yCcAzw</a><br>
+提取码：mtdf</p>
+<h3 id="2nginxconf-配置文件">2、nginx.conf 配置文件
+</h3><p>nginx.conf 配置文件如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">worker_processes  1<span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#error_log  logs/error.log;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#error_log  logs/error.log  notice;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#error_log  logs/error.log  info;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#error_log  logs/error.log  debug;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">#pid        logs/nginx.pid;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">events <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    worker_connections  1024<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 添加RTMP服务</span>
+</span></span><span class="line"><span class="cl">rtmp <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    server <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        listen 1935<span class="p">;</span> <span class="c1"># 监听端口</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        chunk_size 4000<span class="p">;</span>
+</span></span><span class="line"><span class="cl">        application live <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            live on<span class="p">;</span>
+</span></span><span class="line"><span class="cl">			gop_cache on<span class="p">;</span>
+</span></span><span class="line"><span class="cl">			hls on<span class="p">;</span>
+</span></span><span class="line"><span class="cl">			hls_path html/hls<span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># HTTP服务</span>
+</span></span><span class="line"><span class="cl">http <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    include       mime.types<span class="p">;</span>
+</span></span><span class="line"><span class="cl">    default_type  application/octet-stream<span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">#access_log  logs/access.log  main;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    server <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        listen       8080<span class="p">;</span> <span class="c1"># 监听端口</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> location /flv <span class="o">{</span>
+</span></span><span class="line"><span class="cl">		flv_live on<span class="p">;</span>
+</span></span><span class="line"><span class="cl">		chunked_transfer_encoding on<span class="p">;</span>	
+</span></span><span class="line"><span class="cl">		add_header <span class="s1">&#39;Access-Control-Allow-Origin&#39;</span> <span class="s1">&#39;*&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Allow-Credentials&#34;</span> <span class="s2">&#34;true&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Allow-Methods&#34;</span> <span class="s2">&#34;*&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Allow-Headers&#34;</span> <span class="s2">&#34;Content-Type,Access-Token&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Expose-Headers&#34;</span> <span class="s2">&#34;*&#34;</span><span class="p">;</span>	
+</span></span><span class="line"><span class="cl">		<span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		location /stat.xsl <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            root html<span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">		location /stat <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            rtmp_stat all<span class="p">;</span>
+</span></span><span class="line"><span class="cl">            rtmp_stat_stylesheet stat.xsl<span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">		location / <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            root html<span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>其中涉及到跨域问题：#http-flv</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"> location /flv <span class="o">{</span>
+</span></span><span class="line"><span class="cl">		flv_live on<span class="p">;</span>
+</span></span><span class="line"><span class="cl">		chunked_transfer_encoding on<span class="p">;</span>	
+</span></span><span class="line"><span class="cl">		add_header <span class="s1">&#39;Access-Control-Allow-Origin&#39;</span> <span class="s1">&#39;*&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Allow-Credentials&#34;</span> <span class="s2">&#34;true&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Allow-Methods&#34;</span> <span class="s2">&#34;*&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Allow-Headers&#34;</span> <span class="s2">&#34;Content-Type,Access-Token&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">		add_header <span class="s2">&#34;Access-Control-Expose-Headers&#34;</span> <span class="s2">&#34;*&#34;</span><span class="p">;</span>	
+</span></span><span class="line"><span class="cl">		<span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="3运行-nginx-服务器">3、运行 nginx 服务器
+</h3><p>双击 nginx8080.exe<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/870c612551a548be90baa6f976343b8b.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+在任务管理器可以看到目前 nginx 已开始工作<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/30e9e44ace004d87ab6d1de39515ffc2.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h3 id="4ffmpeg-推流">4、ffmpeg 推流
+</h3><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ffmpeg -re -i SampleVideo_1280x720_20mb.mp4 -vcodec libx264 -acodec aac -f flv -y rtmp://127.0.0.1:1935/live/test1
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这个命令使用 FFmpeg 工具来将输入视频文件 SampleVideo_1280x720_20mb.mp4 转换为 FLV 格式并通过 RTMP 协议流式传输到指定的 URL 地址 rtmp://127.0.0.1:1935/live/test1；</p>
+<ul>
+<li><code>-re</code>：以实时模式（real-time）读取输入文件，模拟实时流传输的速度。</li>
+<li><code>-i SampleVideo_1280x720_20mb.mp4</code>：指定输入文件名为 SampleVideo_1280x720_20mb.mp4。</li>
+<li><code>-vcodec libx264</code>：选择 H.264 编码器作为视频编码器；</li>
+<li><code>-acodec aac</code>：选择 AAC 编码器作为音频编码器；</li>
+<li><code>-f flv</code>：指定输出格式为FLV（Flash Video）；</li>
+<li><code>-y</code>：自动覆盖输出文件，如果存在同名文件则会被替换；</li>
+<li><code>rtmp://127.0.0.1:1935/live/test1</code>：指定输出的 URL 地址，以 RTMP 协议传输到 192.168.36.176 服务器的 1935 端口的 live 应用程序中的 test1 流</li>
+</ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/2a8664ce3b5c41eba830f140d56a32a5.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h3 id="5vlc-播放">5、VLC 播放
+</h3><ul>
+<li>http-flv：<code>http://localhost:8080/flv?port=1935&amp;app=live&amp;stream=test1</code><br>
+对应关系如下：<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/364754d32b694c96bb310a7562ba69c3.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+VLC 进行拉流<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/f6de4df5b3014b2f982df609d036aec5.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/4f49503a81a144ff94557bb10cd1cd19.png" 
+    alt="在这里插入图片描述" 
+     
+/></li>
+<li>rtmp：<code>rtmp://127.0.0.1:1935/live/test1</code><br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/134935bb2a3f469696a0f55ffb172e38.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/e1362983dd214ee0846167459de56def.png" 
+    alt="在这里插入图片描述" 
+     
+/></li>
+<li>Hls：<code>http://localhost:8080/hls/test1.m3u8</code><br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/0518ccb1e0424b27bf91c4b02ee6ab05.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/90ad978a51dc457d8feb5ae2f8987471.png" 
+    alt="在这里插入图片描述" 
+     
+/></li>
+</ul>
+<p>此外，视频和音频内容分割为小的 TS 文件，并生成相应的 M3U8 文件，以便客户端能够获取和播放这些文件。M3U8 文件可以通过 HTTP 服务器提供给客户端，并使用流媒体播放器（如VLC、HLS播放器等）进行解析和播放。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/e1d4c4472f1e4c2986f23c39b5d1e506.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+这个目录是由 nginx.conf 配置文件决定的：<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/e7855cf58e6a4a86acaf918616f06b46.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h3 id="6flvjs-网页播放">6、flv.js 网页播放
+</h3><p>前面我们已经解决了跨域问题<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/aa09762a66ca428894ad25c42b500ade.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+html.flv 文件内容如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl">worker_processes  1;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">#error_log  logs/error.log;
+</span></span><span class="line"><span class="cl">#error_log  logs/error.log  notice;
+</span></span><span class="line"><span class="cl">#error_log  logs/error.log  info;
+</span></span><span class="line"><span class="cl">#error_log  logs/error.log  debug;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">#pid        logs/nginx.pid;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">events {
+</span></span><span class="line"><span class="cl">    worker_connections  1024;
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># 添加RTMP服务
+</span></span><span class="line"><span class="cl">rtmp {
+</span></span><span class="line"><span class="cl">    server {
+</span></span><span class="line"><span class="cl">        listen 1935; # 监听端口
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        chunk_size 4000;
+</span></span><span class="line"><span class="cl">        application live {
+</span></span><span class="line"><span class="cl">            live on;
+</span></span><span class="line"><span class="cl">			gop_cache on;
+</span></span><span class="line"><span class="cl">			hls on;
+</span></span><span class="line"><span class="cl">			hls_path html/hls;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># HTTP服务
+</span></span><span class="line"><span class="cl">http {
+</span></span><span class="line"><span class="cl">    include       mime.types;
+</span></span><span class="line"><span class="cl">    default_type  application/octet-stream;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    #access_log  logs/access.log  main;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    server {
+</span></span><span class="line"><span class="cl">        listen       8080; # 监听端口
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"> location /flv {
+</span></span><span class="line"><span class="cl">			flv_live on;
+</span></span><span class="line"><span class="cl">			chunked_transfer_encoding on;	
+</span></span><span class="line"><span class="cl">			add_header &#39;Access-Control-Allow-Origin&#39; &#39;*&#39;;
+</span></span><span class="line"><span class="cl">     add_header &#34;Access-Control-Allow-Credentials&#34; &#34;true&#34;;
+</span></span><span class="line"><span class="cl">     add_header &#34;Access-Control-Allow-Methods&#34; &#34;*&#34;;
+</span></span><span class="line"><span class="cl">     add_header &#34;Access-Control-Allow-Headers&#34; &#34;Content-Type,Access-Token&#34;;
+</span></span><span class="line"><span class="cl">     add_header &#34;Access-Control-Expose-Headers&#34; &#34;*&#34;;	
+</span></span><span class="line"><span class="cl">		}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		location /stat.xsl {
+</span></span><span class="line"><span class="cl">            root html;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">		location /stat {
+</span></span><span class="line"><span class="cl">            rtmp_stat all;
+</span></span><span class="line"><span class="cl">            rtmp_stat_stylesheet stat.xsl;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">		location / {
+</span></span><span class="line"><span class="cl">            root html;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>因此双击 flv.html 文件，可以看到网页播放成功<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/5a2865f585c64159882f21e914102e0c.jpg" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h2 id="三flv-格式简介">三、FLV 格式简介
+</h2><h3 id="1简介">1、简介
+</h3><p>FLV（Flash Video）是现在非常流行的流媒体格式，由于其视频文件体积轻巧、封装播放简单等特点，使其很适合在网络上进行应用，目前主流的视频网站无一例外地使用了 FLV 格式。另外由于当前浏览器与 Flash Player 紧密的结合，使得网页播放 FLV 视频轻而易举，也是 FLV 流行的原因之一。</p>
+<p>FLV 是流媒体封装格式，我们可以将其数据看为二进制字节流。总体上看，FLV 包括文件头（File Header：9 字节）和文件体（File Body）两部分，其中文件体由一系列的 Tag 及 Tag Size 对组成。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/a4fbcc535b1241948ed278fa86ad4e5e.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<p>注意这个大小关系：<code>PreviosTagSize = TagDataSize + 11;</code></p>
+<h3 id="2flv-格式解析">2、FLV 格式解析
+</h3><p>先来一张图，这是上面我们播放的视频文转换为 FLV 文件<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/2efb82dcd1cb4671b9233d2bd2694365.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+使用 Notepad++ 进行查看二进制数据（<code>注：这里要求 Notepad++ 安装了 HexEditor 插件</code>）</p>
+<blockquote>
+<p>可以参考我以前的博客：<a class="link" href="https://blog.csdn.net/qq_41839588/article/details/130449117"  target="_blank" rel="noopener"
+    >notepad++安装HexEditor插件查看二进制文件</a></p></blockquote>
+<p><code>SampleVideo_1280x720_20mb.flv</code> 文件二进制内容如下：<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/b6a374ac9f2c44d0947af390853b6562.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h4 id="header">①、header
+</h4><p>头部分由以下几部分组成：<code>Signature（3 Byte）+Version（1 Byte）+Flags（1 Bypte）+DataOffset（4 Byte）</code></p>
+<ul>
+<li><code>signature</code> 占 3 个字节：固定 FLV 三个字符作为标示。一般发现前三个字符为 FLV 时就认为他是 flv 文件。</li>
+<li><code>Version</code> 占 1 个字节：标示 FLV 的版本号。 这里我们看到是 1</li>
+<li><code>Flags</code> 占 1 个字节：内容标示。第 0 位和第 2 位，分别表示 video 与 audio 存在的情况。(1 表示存在，0 表示不存在)。截图看到是 0x05，也就是 00000101，代表既有视频，也有音频。</li>
+<li><code>DataOffset</code> 4 个字节：表示 FLV 的 header 长度。 这里可以看到固定是 9</li>
+</ul>
+<h4 id="body">②、body
+</h4><p>FLV 的 body 部分是由一系列的 <code>back-pointers</code>（ 后向指针） + <code>tag</code> 构成</p>
+<ul>
+<li><code>back-pointers</code> 固定 4 个字节，表示前一个 tag 的 size。
+<ul>
+<li>从上图可以看到前一个 tag 的 size 为 0</li>
+</ul>
+</li>
+<li><code>tag</code> 分三种类型：video、audio、scripts。
+<ul>
+<li><strong>tag 组成</strong>：<code>tag type</code>[1B]+<code>tag data size</code>[3B]+<code>Timestamp</code>[3B]+<code>TimestampExtended</code>[1B]+<code>stream id</code>[3B]+ <code>tag data</code>
+<ul>
+<li><code>type</code> 1 个字节。8 为 Audio，9 为 Video，18 为 scripts
+<ul>
+<li>从上图可以看到 <code>type</code> 为 <code>0x123 = 18 --&gt; scripts</code></li>
+</ul>
+</li>
+<li><code>tag data size</code> 3 个字节。表示 tag data 的长度：从 streamd id 后算起。
+<ul>
+<li>从上图可以看到 <code>tag data size</code> 为 <code>0x123 = 297</code></li>
+</ul>
+</li>
+<li><code>Timestreamp</code> 3 个字节。 时间戳
+<ul>
+<li>从上图可以看到 <code>Timestreamp</code> 为 <code>0x000000 = 0</code></li>
+</ul>
+</li>
+<li><code>TimestampExtended</code> 1 个字节。 时间戳扩展字段
+<ul>
+<li>从上图可以看到 <code>TimestampExtended</code> 为 <code>0x00 = 0</code></li>
+</ul>
+</li>
+<li><code>stream id</code> 3 个字节。 总是 0</li>
+<li><code>tag data</code> 数据部分</li>
+</ul>
+</li>
+<li><strong>tag 头伪代码</strong>：<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/d9685acb6c064fd38d7e9602cd28d000.png" 
+    alt="在这里插入图片描述" 
+     
+/></li>
+</ul>
+</li>
+</ul>
+<h2 id="四flv-adobe-官方标准">四、FLV <a class="link" href="https://so.csdn.net/so/search?q=Adobe&amp;spm=1001.2101.3001.7020"  target="_blank" rel="noopener"
+    >Adobe</a> 官方标准
+</h2><p>FLV 文件格式标准是写在 F4V/FLV file format spec v10.1 的附录 E 里面的 FLV File Format。</p>
+<h3 id="1单位说明">1、单位说明
+</h3><p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/d18fbb8efa634c2ea2c589ec9886688a.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h3 id="2flv-文件头和文件体-e2-e3">2、FLV 文件头和文件体 (E.2, E.3)
+</h3><p>从整个文件上看，<code>FLV = FLV File Header + FLV File Body</code>。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/0fba52a4713a476ba9119f5580de3b3d.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+通常，FLV 的前 13 个字节（flv header + PreviousTagSize0）完全相同，所以，程序中会单独定义一个常量来指定。特殊，比如有的视频文件没有视频流或没有音频流。</p>
+<h3 id="3flv-tag-e4">3、FLV Tag (E.4)
+</h3><p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/694ffb288f1b486fabfd3d2f05c52448.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+Timestamp 和 TimestampExtended 组成了这个 TAG 包数据的 PTS 信息，<code>PTS =Timestamp | TimestampExtended &lt;&lt; 24</code>。</p>
+<h3 id="4audiotag-e42">4、AudioTag (E.4.2)
+</h3><p>由于 AAC 编码的特殊性， 这里着重说明了 AAC 编码的 Tag 格式。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/31b02a57ac7946168d5f9145b0ddb9ba.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+AudioTagHeader 的第一个字节，也就是接跟着 StreamID 的 1 个字节包含了音频类型，采样率等的基本信息。</p>
+<p>AudioTagHeader 之后跟着的就是 AUDIODATA 部分了。但是，这里有个特例，如果音频格式（SoundFormat）是 AAC，AudioTagHeader 中会多出 1 个字节的数据 AACPacketType，这个字段来表示 AACAUDIODATA 的类型：0 = AAC sequence header，1 = AAC raw。</p>
+<p>AudioSpecificConfig 结构描述非常复杂，在标准文档中是用伪代码描述的，这里先假定要编码的音频格式，做一下简化。</p>
+<p>音频编码为：AAC-LC，音频采样率为 44100。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/f15ce7a0c51947c99e3dd1995230dd55.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+在 FLV 的文件中，一般情况下 AAC sequence header 这种包只出现 1 次，而且是第一个 audio tag，为什么需要这种 tag，因为在做 FLV demux 的时候，如果是 AAC 的音频，需要在每帧 AAC ES 流前边添加 7 个字节 ADST 头， ADST 是解码器通用的格式，也就是说 AAC 的纯 ES 流要打包成 ADST 格式的 AAC 文件，解码器才能正常播放。 就是在打包 ADST 的时候，需要 samplingFrequencyIndex 这个信息，samplingFrequencyIndex 最准确的信息是在 AudioSpecificConfig 中，这样，你就完全可以把 FLV 文件中的音频信息及数据提取出来， 送给音频解码器正常播放了。</p>
+<h3 id="5videotag-e43">5、VideoTag (E.4.3)
+</h3><p>由于 AVC(H.264) 编码的特殊性， 这里着重说明了 AVC(H.264) 编码的 Tag 格式。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/8b8c50f1700b4520a49b4cbb17f7f4e0.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+VideoTagHeader 的第一个字节，也就是接跟着 StreamID 的 1 个字节包含着视频帧类型及视频 CodecID 等最基本信息。</p>
+<p>VideoTagHeader 之后跟着的就是 VIDEODATA 部分了。但是，这里有个特例，如果视频格式（CodecID）是 AVC， VideoTagHeader 会多出 4 个字节的信息。</p>
+<p>AVCDecoderConfigurationRecord 包含着是 H.264 解码相关比较重要的 SPS 和 PPS 信息，在给 AVC 解码器送数据流之前一定要把 SPS 和 PPS 信息送出，否则的话，解码器不能正常解码。而且在解码器 stop 之后再次 start 之前， 如 seek，快进快退状态切换等，都需要重新送一遍 SPS 和 PPS 的信息。AVCDecoderConfigurationRecord 在 FLV 文件中一般情况也只出现 1 次，也就是第一个 video tag。</p>
+<p>AVCDecoderConfigurationRecord 长度为 sizeof(UI8) * (11 + sps_size + pps_size)。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/7cfe05c5d1f046b3917970a21da42d52.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h3 id="6scriptdata-e44">6、SCRIPTDATA (E.4.4)
+</h3><p>ScriptTagBody 内容用 AMF 编码<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/b7913f85e19842d8ae6b4ffa41720783.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+一个 SCRIPTDATAVALUE 记录包含一个有类型的 ActionScript 值。</p>
+<h3 id="7onmetadata-e5">7、onMetadata (E.5)
+</h3><p>FLV metadata object 保存在 SCRIPTDATA 中，叫 onMetaData。不同的软件生成的 FLV 的 properties 不同。<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/a0eb1f12b34a4eeda3202a4ac74f016c.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<h3 id="8keyframes-索引信息">8、keyframes 索引信息
+</h3><p>官方的文档中并没有对 keyframes index 做描述，但是，flv 的这种结构每个 tag 又不像 TS 有同步头，如果没有 keyframes index 的话，需要按顺序读取每一个 tag，seek 及快进快退的效果会非常差。后来在做 flv 文件合成的时候，发现网上有的 flv 文件将 keyframes 信息隐藏在 Script Tag 中。</p>
+<p>keyframes 几乎是一个非官方的标准，也就是民间标准。两个常用的操作 metadata 的工具是 flvtool2 和 FLVMDI， 都是把 keyframes 作为一个默认的元信息项目。在 FLVMDI 的主页上有描述：<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/dbaa973a223541819f3a5c3651fefe62.png" 
+    alt="在这里插入图片描述" 
+     
+/><br>
+也就是说 keyframes 中包含着 2 个内容 “filepositions” 和 “times”分别指的是关键帧的文件位置和关键帧的 PTS。通过 keyframes 可以建立起自己的 Index，然后在 seek 和快进快退的操作中，快速有效地跳转到你想要找的关键帧位置进行处理。</p>
+<h2 id="五flvanalyzer-分析-flv-文件">五、FlvAnalyzer 分析 flv 文件
+</h2><p>参考我之前的博客：<a class="link" href="https://blog.csdn.net/qq_41839588/article/details/132632031"  target="_blank" rel="noopener"
+    >音视频开发常用工具</a></p>
+<p>查看其中第三章的内容：<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<img 
+    src="/post/media/02_http-flv/assets/687ae0ab3c044b929331c1872586cdc1.png" 
+    alt="在这里插入图片描述" 
+     
+/></p>
+<hr>
+<p>我的qq：2442391036，欢迎交流！</p>
+<hr>
+<p><a class="link" href="https://blog.csdn.net/qq_41839588/article/details/134340606"  target="_blank" rel="noopener"
+    >原文</a></p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2020 - 
+        
+        2025 Example Person
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.30.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.868431583616a0f387d4d1885f6025629dd2ee41c4b84fa7e740b51ff3e10b3f.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

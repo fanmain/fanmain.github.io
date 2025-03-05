@@ -6,16 +6,13 @@
 
 <link rel='canonical' href='https://example.com/404.html'>
 
-<link rel="stylesheet" href="/scss/style.min.d8118f156935b64eca93aca758476adca858d2c47354971654d9bd2933a0e45f.css"><meta property='og:title' content="404 Page not found">
+<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="404 Page not found">
 <meta property='og:description' content="演示说明">
 <meta property='og:url' content='https://example.com/404.html'>
 <meta property='og:site_name' content='fan&#39;s blog'>
-<meta property='og:type' content='website'><meta property='og:updated_time' content=' 2024-06-24T15:01:46&#43;08:00 '/>
+<meta property='og:type' content='website'><meta property='og:updated_time' content=' 2024-10-11T14:08:46&#43;08:00 '/>
 <meta name="twitter:title" content="404 Page not found">
 <meta name="twitter:description" content="演示说明">
-  
-
-
     </head>
     <body class="">
     <script>
@@ -57,7 +54,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu64c9db1682e262e7a870ad943e47fe9d_10415_300x0_resize_box_3.png" width="300"
+                        <img src="/img/avatar_hu_6c1f32e22984c769.png" width="300"
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -73,7 +70,7 @@
             <h1 class="site-name"><a href="/">fan&#39;s blog</a></h1>
             <h2 class="site-description">不积跬步，无以至千里</h2>
         </div>
-    </header><ol class="social-menu">
+    </header><ol class="menu-social">
             
                 <li>
                     <a 
@@ -228,19 +225,52 @@
     <div class="not-found-card">
         <h1 class="article-title">404 错误</h1>
         <h2 class="article-subtitle">页面不存在</h2>
-    </div>
-    <footer class="site-footer">
+    </div><form action="/search/" class="search-form widget" data-json="https://example.com/search/index.json">
+            <p>
+                <label>搜索</label>
+                <input id="searchInput" name="keyword" required placeholder="输入关键词..." />
+            
+                <button title="搜索">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                </button>
+            </p>
+        </form>
+
+        <div class="search-result">
+            <h3 class="search-result--title section-title"></h3>
+            <div class="search-result--list article-list--compact"></div>
+        </div>
+        
+        <script>
+            window.searchResultTitleTemplate = "#PAGES_COUNT 个结果 （用时 #TIME_SECONDS 秒）"
+        </script><script type="text/javascript" src="/ts/search.js" defer></script>
+
+        <script>
+            const wrongUrl = new URL(window.location.href);
+
+            
+            const searchKeyword = wrongUrl.pathname.split(/[/|-]/).join(' ').trim();
+
+            document.getElementById('searchInput').setAttribute('value', searchKeyword);
+        </script><footer class="site-footer">
     <section class="copyright">
         &copy; 
         
             2020 - 
         
-        2024 Example Person
+        2025 Example Person
     </section>
     
     <section class="powerby">
         使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
-        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.24.2">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.30.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
 </footer>
 
@@ -251,7 +281,7 @@
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
                 
                 >
-            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+            </script><script type="text/javascript" src="/ts/main.fec178bc5de6b1adc05eb47b56231b6d327b47cd84336869e784d771ec518bf7.js" defer></script>
 <script>
     (function () {
         const customFont = document.createElement('link');

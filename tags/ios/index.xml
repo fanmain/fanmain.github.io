@@ -1960,9 +1960,9 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/2301_80215560/article/details/136604635?spm=1000.2115.3001.6382&amp;amp;utm_medium=distribute.pc_feed_v2.none-task-blog-hot-6-136604635-null-null.329%5ev9%5e%E4%B8%AA%E6%8E%A8pc%E9%A6%96%E9%A1%B5%E6%8E%A8%E8%8D%90%E2%80%94%E6%A1%B610&amp;amp;depth_1-utm_source=distribute.pc_feed_v2.none-task-blog-hot-6-136604635-null-null.329%5ev9%5e%E4%B8%AA%E6%8E%A8pc%E9%A6%96%E9%A1%B5%E6%8E%A8%E8%8D%90%E2%80%94%E6%A1%B610#t14&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;十、基数排序：&lt;/a&gt; &lt;/p&gt;
 &lt;hr&gt;
-&lt;h2 id=&#34;一冒泡排序httpssocsdnnetsosearchqe58692e6b3a1e68e92e5ba8fspm1001210130017020&#34;&gt;一、&lt;a class=&#34;link&#34; href=&#34;https://so.csdn.net/so/search?q=%E5%86%92%E6%B3%A1%E6%8E%92%E5%BA%8F&amp;amp;spm=1001.2101.3001.7020&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;冒泡排序&lt;/a&gt;：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;一冒泡排序&#34;&gt;一、&lt;a class=&#34;link&#34; href=&#34;https://so.csdn.net/so/search?q=%E5%86%92%E6%B3%A1%E6%8E%92%E5%BA%8F&amp;amp;spm=1001.2101.3001.7020&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;冒泡排序&lt;/a&gt;：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;**1、思路：**通过对待排序序列从前向后（从下标较小的元素开始）,依次对相邻两个元素的值进行两两比较，若发现前一个数大于后一个数则交换，使值较大的元素逐渐从前移向后部，就如果水底下的气泡一样逐渐向上冒。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;2、先以一个数组讲解一下，然后再写代码：&lt;/strong&gt;&lt;br&gt;
       待排序数组：3，9，-1，10，20&lt;br&gt;
@@ -1994,8 +1994,7 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;p&gt;（2）每轮排序比较的次数逐轮减少&lt;/p&gt;
 &lt;p&gt;（3）如果发现在某趟排序中，没有发生一次交换， 可以提前结束冒泡排序&lt;/p&gt;
 &lt;p&gt;（4）时间复杂度是O(N^2)      在有序的时候，很快，因为有exchange变量优化了代码&lt;/p&gt;
-&lt;p&gt;         在乱序的时候很慢很慢。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;         在乱序的时候很慢很慢。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -2117,14 +2116,13 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
      
 /&gt;&lt;/p&gt;
 &lt;hr&gt;
-&lt;h2 id=&#34;二插入排序&#34;&gt;二、插入排序：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;二插入排序&#34;&gt;二、插入排序：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;1、思路：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;        在待排序的元素中，假设前n-1个元素已有序，现将第n个元素插入到前面已经排好的序列中，使得前n个元素有序。按照此法对所有元素进行插入，直到整个序列有序。&lt;br&gt;
   但我们并不能确定待排元素中究竟哪一部分是有序的，所以我们一开始只能认为第一个元素是有序的，依次将其后面的元素插入到这个有序序列中来，直到整个序列有序为止。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;2、举例：&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;        如下图的插入扑克牌，当摸到7的时候，会不自觉的与前面的数比较，如果比7大，把大的数向后挪动（swap），然后在第一个小于7的后面插入7&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;        如下图的插入扑克牌，当摸到7的时候，会不自觉的与前面的数比较，如果比7大，把大的数向后挪动（swap），然后在第一个小于7的后面插入7&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -2265,15 +2263,14 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;heading&#34;&gt;&lt;/h2&gt;
-&lt;h2 id=&#34;三选择排序httpssocsdnnetsosearchqe98089e68ba9e68e92e5ba8fspm1001210130017020&#34;&gt;三、&lt;a class=&#34;link&#34; href=&#34;https://so.csdn.net/so/search?q=%E9%80%89%E6%8B%A9%E6%8E%92%E5%BA%8F&amp;amp;spm=1001.2101.3001.7020&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;选择排序&lt;/a&gt;：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;&#34;&gt;
+&lt;/h2&gt;&lt;h2 id=&#34;三选择排序&#34;&gt;三、&lt;a class=&#34;link&#34; href=&#34;https://so.csdn.net/so/search?q=%E9%80%89%E6%8B%A9%E6%8E%92%E5%BA%8F&amp;amp;spm=1001.2101.3001.7020&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;选择排序&lt;/a&gt;：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;1.内层循环一趟找出最小值的下标，与第一个数交换。重复找小，交换的两个操作。&lt;br&gt;
 2.实际上，我们可以一趟选出两个值，一个最大值一个最小值，然后将其放在序列开头和末尾，这样可以使选择排序的效率快一倍。&lt;/p&gt;
-&lt;p&gt;但时间复杂度还是O（N^2），效率还是不高&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;但时间复杂度还是O（N^2），效率还是不高&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -2375,15 +2372,14 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;heading-1&#34;&gt;&lt;/h2&gt;
-&lt;h2 id=&#34;四希尔排序&#34;&gt;四、希尔排序：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;&#34;&gt;
+&lt;/h2&gt;&lt;h2 id=&#34;四希尔排序&#34;&gt;四、希尔排序：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;1.插入排序的优化版，有一个预排序的过程。让大的数快速的跳到后面，小的数快速的跳到前面。&lt;/p&gt;
 &lt;p&gt;2.使待排序列接近有序，然后再对该序列进行一次插入排序。&lt;/p&gt;
 &lt;p&gt;3.相当于把&lt;a class=&#34;link&#34; href=&#34;https://so.csdn.net/so/search?q=%E7%9B%B4%E6%8E%A5%E6%8F%92%E5%85%A5%E6%8E%92%E5%BA%8F&amp;amp;spm=1001.2101.3001.7020&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;直接插入排序&lt;/a&gt;中的1换成gap而已。 &lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;直接插入排序&lt;/a&gt;中的1换成gap而已。 &lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -2521,22 +2517,20 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;heading-2&#34;&gt;&lt;/h2&gt;
-&lt;h2 id=&#34;五堆排序&#34;&gt;五、堆排序：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;&#34;&gt;
+&lt;/h2&gt;&lt;h2 id=&#34;五堆排序&#34;&gt;五、堆排序：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;先来认识堆：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;   1.什么是堆？&lt;/p&gt;
 &lt;p&gt;          大堆：父亲大于儿子          小堆：父亲小于儿子（父亲，儿子是二叉树的概念）&lt;/p&gt;
 &lt;p&gt;   2.堆的物理结构和逻辑结构？&lt;/p&gt;
-&lt;p&gt;          物理结构：数组         逻辑结构：完全二叉树&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;          物理结构：数组         逻辑结构：完全二叉树&lt;/p&gt;&lt;/blockquote&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;堆排序包括建堆（向下调整+循环）  堆排序（交换+向下调整）&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;  1.建堆：&lt;/p&gt;
 &lt;p&gt;        要建大堆，堆顶的元素和最后一个数交换，然后把size&amp;ndash;，就不会破坏堆的结构&lt;/p&gt;
 &lt;p&gt;  2.向下调整算法：&lt;/p&gt;
-&lt;p&gt;        比较两个孩子的大小，选出大的孩子，与父亲比较，如果孩子大于父亲，交换。然后把parent=child，child=parent*2+1；向下调整算法一共会调整h-1次&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;        比较两个孩子的大小，选出大的孩子，与父亲比较，如果孩子大于父亲，交换。然后把parent=child，child=parent*2+1；向下调整算法一共会调整h-1次&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -2702,26 +2696,24 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;heading-3&#34;&gt;&lt;/h2&gt;
-&lt;h2 id=&#34;六快速排序&#34;&gt;六、快速排序：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;&#34;&gt;
+&lt;/h2&gt;&lt;h2 id=&#34;六快速排序&#34;&gt;六、快速排序：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;三种快排方法：&lt;/strong&gt;（一定要自己尝试着去写，会有一些坑，自己写才可以体会）&lt;/p&gt;
 &lt;p&gt;1.挖坑法&lt;/p&gt;
 &lt;p&gt;2.左右指针法&lt;/p&gt;
-&lt;p&gt;3.前后指针法&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;3.前后指针法&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;blockquote&gt;
-&lt;h3 id=&#34;61挖坑法&#34;&gt;6.1挖坑法：&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;1.思想：&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&#34;61挖坑法&#34;&gt;6.1挖坑法：
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;1.思想：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;        记第一个数为key，要调整key的位置，使得左边的都要比key的小，右边的数都比key的大。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;2.步骤：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;        选出一个数据（一般是最左边或是最右边的）存放在key变量中，在该数据位置形成一个坑&lt;br&gt;
         还是定义一个left和一个right，left从左向右走（当遇到大于key的值时停下来）。right从右向左走（当遇到小于key的值时停下来）。（若在最左边挖坑，则需要right先走；若在最右边挖坑，则需要left先走） &lt;/p&gt;
 &lt;p&gt;        把right的那个小的数放在坑中，在把left那个位置的值放在right那个位置中&lt;/p&gt;
 &lt;p&gt;        重复操作，直到left&amp;gt;right时结束，完成一趟，把key放在了正确的位置&lt;/p&gt;
-&lt;p&gt;        最后用分治思想，分成左边和右边，递归。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;        最后用分治思想，分成左边和右边，递归。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt; 
 
 
@@ -2900,14 +2892,13 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
 &lt;blockquote&gt;
-&lt;h3 id=&#34;62左右指针法&#34;&gt;6.2左右指针法&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;br&gt;
+&lt;h3 id=&#34;62左右指针法&#34;&gt;6.2左右指针法
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;br&gt;
 1、选出一个key，一般是最左边或是最右边的。&lt;br&gt;
 2、定义一个begin和一个end，begin从左向右走，end从右向左走。（需要注意的是：若选择最左边的数据作为key，则需要end先走；若选择最右边的数据作为key，则需要bengin先走）（考虑到最后的时候相遇点的和key交换）。&lt;br&gt;
 3、在走的过程中，若end遇到小于key的数，则停下，begin开始走，直到begin遇到一个大于key的数时，将begin和right的内容交换，end再次开始走，如此进行下去，直到begin和end最终相遇，此时将相遇点的内容与key交换即可。（选取最左边的值作为key）&lt;br&gt;
 4.此时key的左边都是小于key的数，key的右边都是大于key的数&lt;br&gt;
-5.将key的左序列和右序列再次进行这种单趟排序，如此反复操作下去，直到左右序列只有一个数据，或是左右序列不存在时&lt;/p&gt;
-&lt;/blockquote&gt;
+5.将key的左序列和右序列再次进行这种单趟排序，如此反复操作下去，直到左右序列只有一个数据，或是左右序列不存在时&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -3038,8 +3029,8 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
 &lt;blockquote&gt;
-&lt;h3 id=&#34;63前后指针法&#34;&gt;6.3前后指针法：&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;br&gt;
+&lt;h3 id=&#34;63前后指针法&#34;&gt;6.3前后指针法：
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;br&gt;
 1、选出一个key，一般是最左边。&lt;br&gt;
 2、起始时，prev指针指向序列开头，cur指针指向prev+1。&lt;br&gt;
 3、让cur一直向前走，当遇到小于a[key]时，让prev向前走一格（这个值一定大于a[key]，因为是cur走过的），然后a[cur]和a[prev]交换。&lt;/p&gt;
@@ -3048,8 +3039,7 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;p&gt;用if(left&amp;gt;right)&lt;/p&gt;
 &lt;p&gt;{&lt;br&gt;
         reurn;&lt;/p&gt;
-&lt;p&gt;}//跳出递归&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;}//跳出递归&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -3203,8 +3193,8 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h3 id=&#34;64优化快排&#34;&gt; 6.4优化快排&lt;/h3&gt;
-&lt;p&gt;三数取中法：取左端、中间、右端三个数，然后进行比较，将中值数当做key&lt;/p&gt;
+&lt;h3 id=&#34;64优化快排&#34;&gt; 6.4优化快排
+&lt;/h3&gt;&lt;p&gt;三数取中法：取左端、中间、右端三个数，然后进行比较，将中值数当做key&lt;/p&gt;
 &lt;p&gt;否则有序时时间复杂度为O(N^2)&lt;/p&gt;
 &lt;p&gt;三数取中法可以套入三种方法中，这里我就写一种&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -3504,12 +3494,11 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;七归并排序&#34;&gt;七、归并排序：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;七归并排序&#34;&gt;七、归并排序：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;思路：&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;1.不断的分割数据，让数据的每一段都有序（一个数据相当于有序）&lt;/p&gt;
-&lt;p&gt;2.当所有子序列有序的时候，在把子序列归并，形成更大的子序列，最终整个数组有序。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;2.当所有子序列有序的时候，在把子序列归并，形成更大的子序列，最终整个数组有序。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 
@@ -3745,9 +3734,9 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;heading-4&#34;&gt;&lt;/h2&gt;
-&lt;h2 id=&#34;八桶排序&#34;&gt;八、桶排序：&lt;/h2&gt;
-&lt;blockquote&gt;
+&lt;h2 id=&#34;&#34;&gt;
+&lt;/h2&gt;&lt;h2 id=&#34;八桶排序&#34;&gt;八、桶排序：
+&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;**思路：**大问题化小&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;桶排序 (Bucket sort)&lt;strong&gt;或所谓的&lt;/strong&gt;箱排序&lt;/strong&gt;，是一种分块的&lt;a class=&#34;link&#34; href=&#34;https://baike.baidu.com/item/%E6%8E%92%E5%BA%8F%E7%AE%97%E6%B3%95/5399605&#34;  title=&#34;排序算法&#34;
      target=&#34;_blank&#34; rel=&#34;noopener&#34;
@@ -3757,8 +3746,7 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
      target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;桶排序&lt;/a&gt;进行排序）&lt;/p&gt;
 &lt;p&gt;把待排序序列（数组）中的数据根据函数映射方法分配到若干个桶中，在分别对各个桶进行排序，最后依次按顺序取出桶中的数据。&lt;br&gt;
-适用于数据分配均匀，数据比较大，相对集中的情况。&lt;/p&gt;
-&lt;/blockquote&gt;
+适用于数据分配均匀，数据比较大，相对集中的情况。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -3932,9 +3920,9 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;heading-5&#34;&gt;&lt;/h2&gt;
-&lt;h2 id=&#34;九计数排序&#34;&gt;九、计数排序：&lt;/h2&gt;
-&lt;p&gt;一种特殊的排序，唯一种没有比较的排序（指没有前后比较，还是有交换的）&lt;/p&gt;
+&lt;h2 id=&#34;&#34;&gt;
+&lt;/h2&gt;&lt;h2 id=&#34;九计数排序&#34;&gt;九、计数排序：
+&lt;/h2&gt;&lt;p&gt;一种特殊的排序，唯一种没有比较的排序（指没有前后比较，还是有交换的）&lt;/p&gt;
 &lt;p&gt;以数组的下标当做数值，有这个数的时候a[i]++;&lt;/p&gt;
 &lt;p&gt;
 
@@ -3965,8 +3953,8 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
      
 /&gt;&lt;/p&gt;
 &lt;p&gt; 局限：适用于整数。数要求集中（否则空间的浪费大）&lt;/p&gt;
-&lt;h3 id=&#34;91绝对映射&#34;&gt;9.1绝对映射：&lt;/h3&gt;
-&lt;p&gt;
+&lt;h3 id=&#34;91绝对映射&#34;&gt;9.1绝对映射：
+&lt;/h3&gt;&lt;p&gt;
 
 
 
@@ -4074,8 +4062,8 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;err&#34;&gt;}
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h3 id=&#34;92现对映射&#34;&gt;9.2现对映射：&lt;/h3&gt;
-&lt;p&gt;
+&lt;/div&gt;&lt;h3 id=&#34;92现对映射&#34;&gt;9.2现对映射：
+&lt;/h3&gt;&lt;p&gt;
 
 
 
@@ -4208,10 +4196,9 @@ ios 上硬编码框架 Video ToolBox 和 AudioToolbox。Video ToolBox 是一个�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;十基数排序&#34;&gt;十、基数排序： &lt;/h2&gt;
-&lt;blockquote&gt;
-&lt;p&gt;原理：是将整数按位数切割成不同的数字，然后按每个位数分别比较。&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;h2 id=&#34;十基数排序&#34;&gt;十、基数排序： 
+&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;原理：是将整数按位数切割成不同的数字，然后按每个位数分别比较。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;
 
 

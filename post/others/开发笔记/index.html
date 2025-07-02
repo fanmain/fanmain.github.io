@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://example.com/post/others/%E5%BC%80%E5%8F%91%E7%AC%94%E8%AE%B0/'>
 
-<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="日常小技巧【未分类】">
+<link rel="stylesheet" href="/scss/style.min.946cca6c6259ef94ac55abfae7c7bf3291ea3ed5eea17ef77500b257217c6710.css"><meta property='og:title' content="日常小技巧【未分类】">
 <meta property='og:description' content="win10 本地时间为UTC时间 Reg add HKLM\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation /v RealTimeIsUniversal /t REG_DWORD /d 1\nedge缓存修改 2021-12-01更新：经过测试最新版Edge不再需要2种方法结合才能生效，2种方法单独都可以使用(谷歌Chrome同理)\n方法一(一劳永逸)：\n①创建新的缓存文件夹，以E:\\Cache\\Edge为例，必须在第3步之前创建；\n②关闭Edge浏览器，删除 C:\\Users\\Administrator\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default路径下的Cache文件夹(加粗字体修改成当前计算机登陆的用户名，Win10用户通过“设置-账户-账户信息”、Win7用户通过“控制面板-用户帐户-用户帐户”查看，用户名必须核实)；\n③以管理员身份运行cmd命令行输入mklink /D &ldquo;C:\\Users\\Administrator\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\Cache&rdquo; &ldquo;E:\\Cache\\Edge&quot;并运行(加粗字体修改成当前登陆用户名，第二个引号内容修改成新路径)；\n方法二(简单)：\n①右键Edge图标 -&gt; 属性 -&gt; 目标 -&gt; 最末尾加上 &ndash;disk-cache-dir=&ldquo;E:\\Cache\\Edge&rdquo;(注意&ndash;前面有个空格，引号里面内容修改成新路径)，点击确定。此方法虽然简单但是必须通过这个图标打开浏览器才能正常缓存到新路径。\n">
 <meta property='og:url' content='https://example.com/post/others/%E5%BC%80%E5%8F%91%E7%AC%94%E8%AE%B0/'>
 <meta property='og:site_name' content='fan&#39;s blog'>
